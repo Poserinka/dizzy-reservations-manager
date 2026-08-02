@@ -5,3 +5,5 @@ Reservations, waiting lists, email notifications, tickets, QR codes and check-in
 This plugin does not create or manage events. It requires Dizzy Events Manager and reads its `dizzy_event` posts and `dizzy_event_occurrences` table.
 
 Use `[dizzy_reservation_form]` on an event page or `[dizzy_reservation_form event_id="123"]` elsewhere.
+
+WordPress admin contains a separate **Reservations** menu with Reservations, Check-in, Reports and Capacity pages.

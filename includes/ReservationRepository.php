@@ -68,4 +68,24 @@ final class ReservationRepository
     {
         global $wpdb; return $wpdb->update($this->table,['checked_in_at'=>null,'checked_in_by'=>null,'updated_at'=>current_time('mysql',true)],['id'=>$id])!==false;
     }
+
+    public function attendanceTotals(): array
+    {
+        global $wpdb;
+        $row=$wpdb->get_row("SELECT COUNT(CASE WHEN status='confirmed' THEN 1 END) confirmed_reservations,COALESCE(SUM(CASE WHEN status='confirmed' THEN guests ELSE 0 END),0) confirmed_guests,COUNT(CASE WHEN checked_in_at IS NOT NULL THEN 1 END) checked_in_reservations,COALESCE(SUM(CASE WHEN checked_in_at IS NOT NULL THEN guests ELSE 0 END),0) checked_in_guests FROM {$this->table}",ARRAY_A)?:[];
+        return array_map('intval',['confirmed_reservations'=>$row['confirmed_reservations']??0,'confirmed_guests'=>$row['confirmed_guests']??0,'checked_in_reservations'=>$row['checked_in_reservations']??0,'checked_in_guests'=>$row['checked_in_guests']??0]);
+    }
+
+    public function reportSummary(): array
+    {
+        global $wpdb;
+        $row=$wpdb->get_row("SELECT COUNT(*) reservations,COALESCE(SUM(CASE WHEN status='confirmed' THEN guests ELSE 0 END),0) confirmed_guests,COALESCE(SUM(CASE WHEN checked_in_at IS NOT NULL THEN guests ELSE 0 END),0) attended_guests,COALESCE(SUM(CASE WHEN status='confirmed' AND checked_in_at IS NULL THEN guests ELSE 0 END),0) no_show_guests,COUNT(CASE WHEN status='waitlisted' THEN 1 END) waitlisted FROM {$this->table}",ARRAY_A)?:[];
+        return array_map('intval',['reservations'=>$row['reservations']??0,'confirmed_guests'=>$row['confirmed_guests']??0,'attended_guests'=>$row['attended_guests']??0,'no_show_guests'=>$row['no_show_guests']??0,'waitlisted'=>$row['waitlisted']??0]);
+    }
+
+    public function reportRows(): array
+    {
+        global $wpdb;$occurrences=$wpdb->prefix.'dizzy_event_occurrences';
+        return $wpdb->get_results("SELECT r.event_id,r.occurrence_id,p.post_title,o.start_datetime,COUNT(r.id) reservations,COALESCE(SUM(r.guests),0) guests,COALESCE(SUM(CASE WHEN r.checked_in_at IS NOT NULL THEN r.guests ELSE 0 END),0) attended,MAX(c.capacity) capacity FROM {$this->table} r LEFT JOIN {$wpdb->posts} p ON p.ID=r.event_id LEFT JOIN {$occurrences} o ON o.id=r.occurrence_id LEFT JOIN {$this->capacities} c ON c.occurrence_id=r.occurrence_id GROUP BY r.event_id,r.occurrence_id,p.post_title,o.start_datetime ORDER BY o.start_datetime DESC",ARRAY_A)?:[];
+    }
 }

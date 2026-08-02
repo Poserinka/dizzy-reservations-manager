@@ -29,4 +29,14 @@ final class EventGateway
         return $wpdb->get_results($wpdb->prepare("SELECT id,start_datetime,end_datetime,timezone FROM {$table} WHERE event_id=%d AND status=%s AND COALESCE(end_datetime,start_datetime)>=%s ORDER BY start_datetime", $eventId, 'publish', current_time('mysql')), ARRAY_A) ?: [];
     }
 
+    public function allUpcoming(): array
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dizzy_event_occurrences';
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT o.id,o.event_id,o.start_datetime,o.end_datetime,o.timezone,p.post_title FROM {$table} o INNER JOIN {$wpdb->posts} p ON p.ID=o.event_id WHERE o.status=%s AND p.post_type=%s AND p.post_status IN ('publish','future','draft','pending','private') AND COALESCE(o.end_datetime,o.start_datetime)>=%s ORDER BY o.start_datetime",
+            'publish', self::POST_TYPE, current_time('mysql')
+        ), ARRAY_A) ?: [];
+    }
+
 }
