@@ -1,60 +1,28 @@
 <?php
-
 /**
- * Plugin Name: Dizzy Events Manager
- * Plugin URI: https://github.com/Poserinka/dizzy-events-manager
- * Description: Advanced event management system for Dizzy Rotterdam.
- * Version: 1.3.0
+ * Plugin Name: Dizzy Reservations Manager
+ * Plugin URI: https://github.com/Poserinka/dizzy-reservations-manager
+ * Description: Reservations, tickets and check-in for Dizzy Events Manager.
+ * Version: 1.0.0
  * Author: Poserinka Design
- * Author URI: https://poserinka.com
- * Text Domain: dizzy-events-manager
+ * Text Domain: dizzy-reservations-manager
  * Requires PHP: 8.2
+ * Requires Plugins: dizzy-events-manager
  */
 
 declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-define(
-    'DIZZY_EVENTS_VERSION',
-    '1.3.0'
-);
+define('DIZZY_RESERVATIONS_VERSION', '1.0.0');
+define('DIZZY_RESERVATIONS_PATH', plugin_dir_path(__FILE__));
 
-define(
-    'DIZZY_EVENTS_PATH',
-    plugin_dir_path(__FILE__)
-);
+require_once DIZZY_RESERVATIONS_PATH . 'includes/Autoloader.php';
+\Dizzy\Reservations\Autoloader::register();
 
-define(
-    'DIZZY_EVENTS_URL',
-    plugin_dir_url(__FILE__)
-);
+register_activation_hook(__FILE__, [\Dizzy\Reservations\Database\Migrations::class, 'run']);
 
-$autoload = DIZZY_EVENTS_PATH . 'vendor/autoload.php';
-
-if (file_exists($autoload)) {
-    require_once $autoload;
-} else {
-    require_once DIZZY_EVENTS_PATH . 'includes/Core/Autoloader.php';
-    \Dizzy\Events\Core\Autoloader::register();
-}
-
-register_activation_hook(
-    __FILE__,
-    static function (): void {
-        \Dizzy\Events\Database\Migrations::run();
-    }
-);
-
-add_action(
-    'init',
-    static function (): void {
-        \Dizzy\Events\Database\Migrations::run();
-
-        $application = new \Dizzy\Events\Core\Application();
-        $application->boot();
-
-        $GLOBALS['dizzy_events_application'] = $application;
-    },
-    0
-);
+add_action('init', static function (): void {
+    \Dizzy\Reservations\Database\Migrations::run();
+    (new \Dizzy\Reservations\Plugin())->boot();
+}, 20);
