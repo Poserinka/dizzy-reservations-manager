@@ -1,0 +1,74 @@
+.dizzy-events {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.dizzy-event-card {
+    position: relative;
+    padding: 1.25rem;
+    border: 1px solid currentColor;
+    border-radius: 0.5rem;
+}
+
+.dizzy-event-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+    border-radius: 0.35rem;
+}
+
+.dizzy-event-featured {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.dizzy-event-title,
+.dizzy-event-dates h4 {
+    margin-top: 0;
+}
+
+.dizzy-event-artist,
+.dizzy-event-genre,
+.dizzy-event-venue,
+.dizzy-event-address,
+.dizzy-event-price {
+    margin: 0.35rem 0;
+}
+
+.dizzy-event-address a,
+.dizzy-event-meta a {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.dizzy-event-dates ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.dizzy-event-dates li {
+    margin-bottom: 0.35rem;
+}
+
+.dizzy-event-ticket,
+.dizzy-event-link {
+    display: inline-block;
+    margin-top: 1rem;
+    margin-right: 0.75rem;
+}
+
+.dizzy-single-event {
+    width: min(100%, 960px);
+    margin-inline: auto;
+}
+
+.dizzy-event-meta {
+    margin-block: 1.5rem;
+}
+
+.dizzy-event-meta p {
+    margin: 0.4rem 0;
+}

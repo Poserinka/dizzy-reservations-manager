@@ -1,0 +1,30 @@
+{
+    "name": "Food",
+    "version": "1.0",
+    "size": {
+        "width": 1080,
+        "height": 1080
+    },
+    "elements": [
+        {
+            "type": "logo",
+            "x": 540,
+            "y": 80
+        },
+        {
+            "type": "title",
+            "x": 540,
+            "y": 350
+        },
+        {
+            "type": "date",
+            "x": 540,
+            "y": 700
+        },
+        {
+            "type": "venue",
+            "x": 540,
+            "y": 800
+        }
+    ]
+}

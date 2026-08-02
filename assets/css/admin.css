@@ -1,0 +1,69 @@
+.dizzy-occurrences-wrapper {
+    overflow-x: auto;
+}
+
+.dizzy-occurrences-table {
+    min-width: 760px;
+}
+
+.dizzy-occurrence-row {
+    background: #ffffff;
+}
+
+.dizzy-occurrence-row td {
+    vertical-align: middle;
+}
+
+.dizzy-occurrence-row input,
+.dizzy-occurrence-row select {
+    min-width: 135px;
+}
+
+.dizzy-occurrence-actions {
+    min-width: 145px;
+    white-space: nowrap;
+}
+
+.dizzy-sort-handle {
+    align-items: center;
+    color: #646970;
+    cursor: grab;
+    display: inline-flex;
+    height: 30px;
+    justify-content: center;
+    margin-right: 8px;
+    text-decoration: none;
+    vertical-align: middle;
+    width: 30px;
+}
+
+.dizzy-sort-handle:active {
+    cursor: grabbing;
+}
+
+.dizzy-sort-handle:focus {
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: 2px solid transparent;
+}
+
+.dizzy-sort-placeholder td {
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    height: 48px;
+}
+
+.dizzy-remove-occurrence {
+    vertical-align: middle;
+}
+
+.dizzy-add-occurrence {
+    margin-top: 10px;
+}
+
+#dizzy_event_occurrences {
+    max-width: 100%;
+}
+
+#dizzy_event_occurrences .inside {
+    padding: 15px;
+}
