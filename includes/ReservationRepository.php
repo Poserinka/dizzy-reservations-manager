@@ -85,7 +85,26 @@ final class ReservationRepository
 
     public function reportRows(): array
     {
-        global $wpdb;$occurrences=$wpdb->prefix.'dizzy_event_occurrences';
-        return $wpdb->get_results("SELECT r.event_id,r.occurrence_id,p.post_title,o.start_datetime,COUNT(r.id) reservations,COALESCE(SUM(r.guests),0) guests,COALESCE(SUM(CASE WHEN r.checked_in_at IS NOT NULL THEN r.guests ELSE 0 END),0) attended,MAX(c.capacity) capacity FROM {$this->table} r LEFT JOIN {$wpdb->posts} p ON p.ID=r.event_id LEFT JOIN {$occurrences} o ON o.id=r.occurrence_id LEFT JOIN {$this->capacities} c ON c.occurrence_id=r.occurrence_id GROUP BY r.event_id,r.occurrence_id,p.post_title,o.start_datetime ORDER BY o.start_datetime DESC",ARRAY_A)?:[];
+        global $wpdb;
+        $occurrences = $wpdb->prefix . 'dizzy_event_occurrences';
+        $rows = $wpdb->get_results(
+            "SELECT r.event_id,r.occurrence_id,p.post_title,o.start_datetime,
+                COUNT(r.id) reservations,
+                COALESCE(SUM(r.guests),0) guests,
+                COALESCE(SUM(CASE WHEN r.checked_in_at IS NOT NULL THEN r.guests ELSE 0 END),0) attended
+            FROM {$this->table} r
+            LEFT JOIN {$wpdb->posts} p ON p.ID=r.event_id
+            LEFT JOIN {$occurrences} o ON o.id=r.occurrence_id
+            GROUP BY r.event_id,r.occurrence_id,p.post_title,o.start_datetime
+            ORDER BY o.start_datetime DESC",
+            ARRAY_A
+        ) ?: [];
+
+        foreach ($rows as &$row) {
+            $row['capacity'] = absint(get_post_meta((int) $row['event_id'], '_dizzy_capacity', true));
+        }
+        unset($row);
+
+        return $rows;
     }
 }
