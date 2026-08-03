@@ -315,6 +315,35 @@ final class TicketSalesRepository
         }
     }
 
+    public function checkInTicket(string $code, int $userId): string
+    {
+        global $wpdb;
+        $ticket = $this->ticketByCode($code);
+
+        if ($ticket === null || ($ticket['status'] ?? '') !== 'valid') {
+            return 'invalid';
+        }
+
+        if (! empty($ticket['checked_in_at'])) {
+            return 'already_checked_in';
+        }
+
+        $updated = $wpdb->update(
+            $this->tickets,
+            [
+                'checked_in_at' => current_time('mysql', true),
+                'checked_in_by' => $userId,
+            ],
+            [
+                'id' => (int) $ticket['id'],
+                'status' => 'valid',
+                'checked_in_at' => null,
+            ]
+        );
+
+        return $updated === 1 ? 'checked_in' : 'already_checked_in';
+    }
+
     public function allOrders(): array
     {
         global $wpdb;
