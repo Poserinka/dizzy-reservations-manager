@@ -45,9 +45,9 @@ final class TicketSalesController
         $atts = shortcode_atts(['event_id' => get_the_ID()], $atts);
         $eventId = absint($atts['event_id']);
         $occurrences = $this->events->upcoming($eventId);
-        $rawPrice = trim((string) get_post_meta($eventId, '_dizzy_ticket_price', true));
+        $rawPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_ticket_price', true)));
 
-        if ($rawPrice === '') {
+        if ($rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
             return do_shortcode('[dizzy_reservation_form event_id="' . $eventId . '"]');
         }
 
