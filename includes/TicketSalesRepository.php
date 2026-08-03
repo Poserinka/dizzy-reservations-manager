@@ -33,13 +33,58 @@ final class TicketSalesRepository
     {
         global $wpdb;
 
-        $rawPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_ticket_price', true)));
-        $capacity = absint(get_post_meta($eventId, '_dizzy_capacity', true));
-        $existingId = (int) $wpdb->get_var(
-            $wpdb->prepare("SELECT id FROM {$this->types} WHERE event_id=%d ORDER BY id LIMIT 1", $eventId)
-        );
+        $legacyPrice = (string) get_post_meta($eventId, '_dizzy_ticket_price', true);
+        $prices = [
+            __('Standard Ticket', 'dizzy-reservations-manager') => (string) get_post_meta($eventId, '_dizzy_standard_ticket_price', true),
+            __('Student Ticket', 'dizzy-reservations-manager') => (string) get_post_meta($eventId, '_dizzy_student_ticket_price', true),
+        ];
 
-        if ($rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+        if (trim($prices[__('Standard Ticket', 'dizzy-reservations-manager')]) === '') {
+            $prices[__('Standard Ticket', 'dizzy-reservations-manager')] = $legacyPrice;
+        }
+
+        $capacity = absint(get_post_meta($eventId, '_dizzy_capacity', true));
+        $activeIds = [];
+
+        foreach ($prices as $name => $rawPrice) {
+            $rawPrice = trim(str_replace(',', '.', $rawPrice));
+            $existingId = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT id FROM {$this->types} WHERE event_id=%d AND name=%s ORDER BY id LIMIT 1",
+                    $eventId,
+                    $name
+                )
+            );
+
+            if ($existingId === 0 && $name === __('Standard Ticket', 'dizzy-reservations-manager')) {
+                $existingId = (int) $wpdb->get_var(
+                    $wpdb->prepare("SELECT id FROM {$this->types} WHERE event_id=%d ORDER BY id LIMIT 1", $eventId)
+                );
+            }
+
+            if ($rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+                if ($existingId > 0) {
+                    $wpdb->update(
+                        $this->types,
+                        ['active' => 0, 'updated_at' => current_time('mysql', true)],
+                        ['id' => $existingId]
+                    );
+                }
+                continue;
+            }
+
+            $activeIds[] = $this->saveType([
+                'id' => $existingId,
+                'event_id' => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'name' => $name,
+                'price' => $rawPrice,
+                'capacity' => $capacity,
+                'active' => true,
+            ]);
+        }
+
+        if ($activeIds === []) {
             $wpdb->update(
                 $this->types,
                 ['active' => 0, 'updated_at' => current_time('mysql', true)],
@@ -48,22 +93,14 @@ final class TicketSalesRepository
             return;
         }
 
-        $typeId = $this->saveType([
-            'id' => $existingId,
-            'event_id' => $eventId,
-            'occurrence_id' => $occurrenceId,
-            'name' => __('Standard Ticket', 'dizzy-reservations-manager'),
-            'price' => $rawPrice,
-            'capacity' => $capacity,
-            'active' => true,
-        ]);
-
+        $placeholders = implode(',', array_fill(0, count($activeIds), '%d'));
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$this->types} SET active=0,updated_at=%s WHERE event_id=%d AND id<>%d",
+                "UPDATE {$this->types} SET active=0,updated_at=%s
+                WHERE event_id=%d AND id NOT IN ({$placeholders})",
                 current_time('mysql', true),
                 $eventId,
-                $typeId
+                ...$activeIds
             )
         );
     }
