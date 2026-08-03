@@ -122,7 +122,17 @@ final class TicketSalesController
 
         try {
             $result = $this->service->start(wp_unslash($_POST));
-            wp_safe_redirect($result['checkout_url']);
+            $checkoutUrl = esc_url_raw($result['checkout_url']);
+            $checkoutHost = strtolower((string) wp_parse_url($checkoutUrl, PHP_URL_HOST));
+
+            if (
+                $checkoutUrl === ''
+                || ($checkoutHost !== 'mollie.com' && ! str_ends_with($checkoutHost, '.mollie.com'))
+            ) {
+                throw new \RuntimeException('Mollie returned an invalid checkout URL.');
+            }
+
+            wp_redirect($checkoutUrl, 303, 'Dizzy Reservations Manager');
             exit;
         } catch (Throwable $exception) {
             error_log('Dizzy ticket checkout failed: ' . $exception->getMessage());
