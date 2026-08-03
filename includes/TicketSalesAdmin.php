@@ -22,20 +22,10 @@ final class TicketSalesAdmin
     {
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_init', [$this, 'settings']);
-        add_action('admin_post_dizzy_save_ticket_type', [$this, 'saveType']);
     }
 
     public function menu(): void
     {
-        add_submenu_page(
-            self::MENU,
-            __('Ticket Types', 'dizzy-reservations-manager'),
-            __('Ticket Types', 'dizzy-reservations-manager'),
-            'manage_options',
-            'dizzy-ticket-types',
-            [$this, 'typesPage']
-        );
-
         add_submenu_page(
             self::MENU,
             __('Ticket Orders', 'dizzy-reservations-manager'),
