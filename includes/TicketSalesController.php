@@ -96,6 +96,7 @@ final class TicketSalesController
             <?php wp_nonce_field('dizzy_ticket_purchase', 'dizzy_ticket_nonce'); ?>
             <input type="hidden" name="dizzy_ticket_purchase" value="1">
             <input type="hidden" name="event_id" value="<?php echo esc_attr((string) $eventId); ?>">
+            <input type="hidden" name="return_url" value="<?php echo esc_url((string) get_permalink()); ?>">
 
             <p>
                 <label><?php esc_html_e('Ticket', 'dizzy-reservations-manager'); ?><br>
