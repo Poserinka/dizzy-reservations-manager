@@ -45,9 +45,18 @@ final class TicketSalesController
         $atts = shortcode_atts(['event_id' => get_the_ID()], $atts);
         $eventId = absint($atts['event_id']);
         $occurrences = $this->events->upcoming($eventId);
-        $rawPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_ticket_price', true)));
+        $standardPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_standard_ticket_price', true)));
+        $studentPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_student_ticket_price', true)));
 
-        if ($rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+        if ($standardPrice === '') {
+            $standardPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_ticket_price', true)));
+        }
+
+        $hasPaidTicket =
+            (is_numeric($standardPrice) && (float) $standardPrice > 0)
+            || (is_numeric($studentPrice) && (float) $studentPrice > 0);
+
+        if (! $hasPaidTicket) {
             return do_shortcode('[dizzy_reservation_form event_id="' . $eventId . '"]');
         }
 
