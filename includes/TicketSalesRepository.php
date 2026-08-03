@@ -29,6 +29,45 @@ final class TicketSalesRepository
         $this->webhooks = $wpdb->prefix . 'dizzy_payment_webhooks';
     }
 
+    public function syncFromEvent(int $eventId, int $occurrenceId): void
+    {
+        global $wpdb;
+
+        $rawPrice = trim(str_replace(',', '.', (string) get_post_meta($eventId, '_dizzy_ticket_price', true)));
+        $capacity = absint(get_post_meta($eventId, '_dizzy_capacity', true));
+        $existingId = (int) $wpdb->get_var(
+            $wpdb->prepare("SELECT id FROM {$this->types} WHERE event_id=%d ORDER BY id LIMIT 1", $eventId)
+        );
+
+        if ($rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+            $wpdb->update(
+                $this->types,
+                ['active' => 0, 'updated_at' => current_time('mysql', true)],
+                ['event_id' => $eventId]
+            );
+            return;
+        }
+
+        $typeId = $this->saveType([
+            'id' => $existingId,
+            'event_id' => $eventId,
+            'occurrence_id' => $occurrenceId,
+            'name' => __('Standard Ticket', 'dizzy-reservations-manager'),
+            'price' => $rawPrice,
+            'capacity' => $capacity,
+            'active' => true,
+        ]);
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$this->types} SET active=0,updated_at=%s WHERE event_id=%d AND id<>%d",
+                current_time('mysql', true),
+                $eventId,
+                $typeId
+            )
+        );
+    }
+
     public function activeTypes(int $eventId): array
     {
         global $wpdb;
