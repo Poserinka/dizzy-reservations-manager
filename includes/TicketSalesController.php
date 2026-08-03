@@ -169,6 +169,19 @@ final class TicketSalesController
             wp_die(esc_html__('Invalid ticket.', 'dizzy-reservations-manager'));
         }
 
+        $checkinResult = '';
+        $checkinNonce = isset($_GET['checkin_nonce'])
+            ? sanitize_text_field(wp_unslash((string) $_GET['checkin_nonce']))
+            : '';
+
+        if (
+            current_user_can('manage_options')
+            && wp_verify_nonce($checkinNonce, 'dizzy_qr_checkin')
+        ) {
+            $checkinResult = $this->repository->checkInTicket($code, get_current_user_id());
+            $ticket = $this->repository->ticketByCode($code) ?? $ticket;
+        }
+
         $url = $this->service->ticketUrl($code);
         $qr = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' . rawurlencode($url);
         status_header(200);
@@ -187,6 +200,15 @@ final class TicketSalesController
             <p><?php echo esc_html((string) $ticket['holder_name']); ?></p>
             <img src="<?php echo esc_url($qr); ?>" width="280" height="280" alt="<?php esc_attr_e('Ticket QR code', 'dizzy-reservations-manager'); ?>">
             <p><code><?php echo esc_html(strtoupper(substr($code, 0, 12))); ?></code></p>
+            <?php if ($checkinResult !== '') : ?>
+                <p><strong><?php echo esc_html(
+                    $checkinResult === 'checked_in'
+                        ? __('Check-in completed.', 'dizzy-reservations-manager')
+                        : __('Ticket was already checked in or is invalid.', 'dizzy-reservations-manager')
+                ); ?></strong></p>
+            <?php elseif (! empty($ticket['checked_in_at'])) : ?>
+                <p><strong><?php esc_html_e('Checked in', 'dizzy-reservations-manager'); ?></strong></p>
+            <?php endif; ?>
         </body>
         </html>
         <?php
