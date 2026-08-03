@@ -192,9 +192,9 @@ final class TicketSalesRepository
                         "SELECT COALESCE(SUM(i.quantity),0)
                         FROM {$this->items} i
                         INNER JOIN {$this->orders} o ON o.id=i.order_id
-                        WHERE i.ticket_type_id=%d
+                        WHERE o.event_id=%d
                         AND (o.status='paid' OR (o.status='pending' AND o.expires_at>%s))",
-                        (int) $locked['id'],
+                        (int) $locked['event_id'],
                         current_time('mysql', true)
                     )
                 );
