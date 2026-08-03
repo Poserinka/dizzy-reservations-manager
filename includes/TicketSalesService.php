@@ -63,9 +63,12 @@ final class TicketSalesService
             ['name' => $name, 'email' => $email, 'phone' => $phone]
         );
 
+        $requestedReturnUrl = esc_url_raw((string) ($data['return_url'] ?? ''));
+        $returnBase = wp_validate_redirect($requestedReturnUrl, home_url('/'));
+
         $returnUrl = add_query_arg(
             ['dizzy_order' => $order['token']],
-            wp_get_referer() ?: home_url('/')
+            $returnBase
         );
 
         try {
