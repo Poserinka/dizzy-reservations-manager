@@ -25,7 +25,76 @@ final class GitHubUpdater
     {
         add_filter('pre_set_site_transient_update_plugins', [$this, 'checkForUpdate']);
         add_filter('plugins_api', [$this, 'pluginInformation'], 20, 3);
+        add_filter('plugin_action_links_' . $this->pluginBasename, [$this, 'actionLinks']);
+        add_action('admin_post_' . $this->checkAction(), [$this, 'checkNow']);
+        add_action('admin_notices', [$this, 'checkNotice']);
         add_action('upgrader_process_complete', [$this, 'clearCacheAfterUpdate'], 10, 2);
+    }
+
+    /**
+     * @param array<int|string, string> $links
+     * @return array<int|string, string>
+     */
+    public function actionLinks(array $links): array
+    {
+        if (! current_user_can('update_plugins')) {
+            return $links;
+        }
+
+        $url = wp_nonce_url(
+            admin_url('admin-post.php?action=' . $this->checkAction()),
+            $this->checkAction()
+        );
+
+        $links[] = '<a href="' . esc_url($url) . '">' .
+            esc_html__('Check GitHub Updates Now', 'default') .
+            '</a>';
+
+        return $links;
+    }
+
+    public function checkNow(): void
+    {
+        if (! current_user_can('update_plugins')) {
+            wp_die(esc_html__('You are not allowed to update plugins.', 'default'));
+        }
+
+        check_admin_referer($this->checkAction());
+
+        delete_site_transient($this->cacheKey);
+        delete_site_transient('update_plugins');
+        wp_clean_plugins_cache(true);
+
+        if (! function_exists('wp_update_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/update.php';
+        }
+
+        wp_update_plugins();
+
+        wp_safe_redirect(
+            add_query_arg(
+                'dizzy_github_checked',
+                rawurlencode($this->slug),
+                admin_url('plugins.php')
+            )
+        );
+        exit;
+    }
+
+    public function checkNotice(): void
+    {
+        if (
+            ! current_user_can('update_plugins')
+            || ! isset($_GET['dizzy_github_checked'])
+            || sanitize_key(wp_unslash((string) $_GET['dizzy_github_checked'])) !== $this->slug
+        ) {
+            return;
+        }
+        ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php esc_html_e('GitHub update check completed.', 'default'); ?></p>
+        </div>
+        <?php
     }
 
     public function checkForUpdate(mixed $transient): mixed
@@ -91,6 +160,11 @@ final class GitHubUpdater
         }
 
         delete_site_transient($this->cacheKey);
+    }
+
+    private function checkAction(): string
+    {
+        return 'dizzy_check_github_update_' . sanitize_key($this->slug);
     }
 
     /**
