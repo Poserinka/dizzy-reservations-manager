@@ -1,0 +1,40 @@
+name: Build WordPress release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build WordPress plugin ZIP
+        env:
+          PLUGIN_SLUG: dizzy-reservations-manager
+        run: |
+          mkdir -p "build/$PLUGIN_SLUG"
+          rsync -a ./ "build/$PLUGIN_SLUG/" \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "build" \
+            --exclude "*.zip"
+          cd build
+          zip -rq "../$PLUGIN_SLUG.zip" "$PLUGIN_SLUG"
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLUGIN_SLUG: dizzy-reservations-manager
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          gh release view "$TAG_NAME" >/dev/null 2>&1 || \
+            gh release create "$TAG_NAME" --title "Dizzy Reservations Manager $TAG_NAME" --generate-notes
+          gh release upload "$TAG_NAME" "$PLUGIN_SLUG.zip" --clobber
