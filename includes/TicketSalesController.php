@@ -14,7 +14,8 @@ final class TicketSalesController
 {
     public function __construct(
         private TicketSalesRepository $repository,
-        private TicketSalesService $service
+        private TicketSalesService $service,
+        private EventGateway $events
     ) {
     }
 
@@ -43,6 +44,18 @@ final class TicketSalesController
     {
         $atts = shortcode_atts(['event_id' => get_the_ID()], $atts);
         $eventId = absint($atts['event_id']);
+        $occurrences = $this->events->upcoming($eventId);
+        $rawPrice = trim((string) get_post_meta($eventId, '_dizzy_ticket_price', true));
+
+        if ($rawPrice === '') {
+            return do_shortcode('[dizzy_reservation_form event_id="' . $eventId . '"]');
+        }
+
+        if ($occurrences === []) {
+            return '<p>' . esc_html__('No ticket sales date is available for this event.', 'dizzy-reservations-manager') . '</p>';
+        }
+
+        $this->repository->syncFromEvent($eventId, (int) $occurrences[0]['id']);
         $types = $this->repository->activeTypes($eventId);
 
         ob_start();
