@@ -31,6 +31,11 @@ final class TicketSalesService
         $phone = sanitize_text_field((string) ($data['phone'] ?? ''));
         $type = $this->repository->findType($typeId);
 
+        if (is_array($type) && (int) $type['event_id'] === $eventId) {
+            $this->repository->syncFromEvent($eventId, (int) $type['occurrence_id']);
+            $type = $this->repository->findType($typeId);
+        }
+
         if (
             ! is_array($type)
             || (int) $type['event_id'] !== $eventId
