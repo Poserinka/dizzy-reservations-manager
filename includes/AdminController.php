@@ -19,7 +19,6 @@ final class AdminController
         add_action('admin_post_dizzy_reservation_status',[$this,'status']);
         add_action('admin_post_dizzy_reservation_checkin',[$this,'checkin']);
         add_action('admin_post_dizzy_reservation_undo_checkin',[$this,'undo']);
-        add_action('admin_post_dizzy_reservation_capacity',[$this,'saveCapacity']);
         add_action('admin_post_dizzy_reservation_report_csv',[$this,'exportCsv']);
     }
 
@@ -29,7 +28,6 @@ final class AdminController
         add_submenu_page(self::MENU,__('Reservations','dizzy-reservations-manager'),__('Reservations','dizzy-reservations-manager'),'manage_options',self::MENU,[$this,'reservations']);
         add_submenu_page(self::MENU,__('Check-in','dizzy-reservations-manager'),__('Check-in','dizzy-reservations-manager'),'manage_options','dizzy-reservations-checkin',[$this,'checkinPage']);
         add_submenu_page(self::MENU,__('Reports','dizzy-reservations-manager'),__('Reports','dizzy-reservations-manager'),'manage_options','dizzy-reservations-reports',[$this,'reports']);
-        add_submenu_page(self::MENU,__('Capacity','dizzy-reservations-manager'),__('Capacity','dizzy-reservations-manager'),'manage_options','dizzy-reservations-capacity',[$this,'capacity']);
     }
 
     public function reservations(): void
