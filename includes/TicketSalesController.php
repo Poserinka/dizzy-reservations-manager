@@ -242,6 +242,9 @@ final class TicketSalesController
             <?php elseif (! empty($ticket['checked_in_at'])) : ?>
                 <p><strong><?php esc_html_e('Checked in', 'dizzy-reservations-manager'); ?></strong></p>
             <?php endif; ?>
+            <?php if ($checkinResult !== '') : ?>
+                <p><a href="<?php echo esc_url(admin_url('admin.php?page=dizzy-reservations-checkin')); ?>" style="display:inline-block;background:#2271b1;color:#fff;padding:11px 18px;text-decoration:none"><?php esc_html_e('Return to Check-in', 'dizzy-reservations-manager'); ?></a></p>
+            <?php endif; ?>
         </body>
         </html>
         <?php
