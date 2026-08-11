@@ -3,7 +3,7 @@
  * Plugin Name: Dizzy Reservations Manager
  * Plugin URI: https://github.com/Poserinka/dizzy-reservations-manager
  * Description: Reservations, Mollie iDEAL ticket sales, QR tickets and check-in for Dizzy Events Manager.
- * Version: 2.2.1
+ * Version: 2.3.0
  * Author: Poserinka Design
  * Text Domain: dizzy-reservations-manager
  * Requires PHP: 8.2
@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-define('DIZZY_RESERVATIONS_VERSION', '2.2.1');
+define('DIZZY_RESERVATIONS_VERSION', '2.3.0');
 define('DIZZY_RESERVATIONS_PATH', plugin_dir_path(__FILE__));
 
 require_once DIZZY_RESERVATIONS_PATH . 'includes/Autoloader.php';

@@ -36,9 +36,11 @@ final class Plugin
         $salesRepository = new TicketSalesRepository();
         $mollie = new MollieClient();
         $salesService = new TicketSalesService($events, $salesRepository, $mollie, $mailer);
+        $ticketExperience = new TicketExperience($salesRepository);
 
         (new FrontendController($events, $reservationService))->register();
         (new TicketSalesController($salesRepository, $salesService, $events))->register();
+        $ticketExperience->register();
         $tickets->register();
 
         if (is_admin()) {
