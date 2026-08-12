@@ -12,10 +12,8 @@ final class AdminController
     private const REPORTS = 'dizzy-reservations-reports';
     private const STATUSES = ['pending', 'confirmed', 'waitlisted', 'cancelled'];
 
-    public function __construct(
-        private ReservationRepository $repository,
-        private ReservationService $service
-    ) {
+    public function __construct(private ReservationRepository $repository, private ReservationService $service)
+    {
     }
 
     public function register(): void
@@ -39,26 +37,16 @@ final class AdminController
         <div class="wrap">
             <h1><?php esc_html_e('Reservations', 'dizzy-reservations-manager'); ?></h1>
             <table class="widefat striped">
-                <thead><tr><th><?php esc_html_e('Name', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Event', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Guests', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Status', 'dizzy-reservations-manager'); ?></th></tr></thead>
+                <thead><tr><th><?php esc_html_e('Guest', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Time', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('People', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Message', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Status', 'dizzy-reservations-manager'); ?></th></tr></thead>
                 <tbody>
                 <?php foreach ($this->repository->all() as $row) : $id = (int) $row['id']; ?>
                     <tr>
-                        <td><?php echo esc_html((string) $row['name']); ?><br><?php echo esc_html((string) $row['email']); ?></td>
-                        <td><?php echo esc_html(get_the_title((int) $row['event_id'])); ?></td>
+                        <td><strong><?php echo esc_html((string) $row['name']); ?></strong><br><?php echo esc_html((string) $row['email']); ?><br><?php echo esc_html((string) $row['phone']); ?></td>
+                        <td><?php echo esc_html((string) $row['reservation_date']); ?></td>
+                        <td><?php echo esc_html(substr((string) $row['reservation_time'], 0, 5)); ?></td>
                         <td><?php echo esc_html((string) $row['guests']); ?></td>
-                        <td>
-                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                                <input type="hidden" name="action" value="dizzy_reservation_status">
-                                <input type="hidden" name="reservation_id" value="<?php echo esc_attr((string) $id); ?>">
-                                <?php wp_nonce_field('dizzy_reservation_' . $id); ?>
-                                <select name="status">
-                                    <?php foreach (self::STATUSES as $status) : ?>
-                                        <option value="<?php echo esc_attr($status); ?>" <?php selected($row['status'], $status); ?>><?php echo esc_html(ucfirst($status)); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button class="button"><?php esc_html_e('Save', 'dizzy-reservations-manager'); ?></button>
-                            </form>
-                        </td>
+                        <td><?php echo nl2br(esc_html((string) $row['notes'])); ?></td>
+                        <td><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="dizzy_reservation_status"><input type="hidden" name="reservation_id" value="<?php echo esc_attr((string) $id); ?>"><?php wp_nonce_field('dizzy_reservation_' . $id); ?><select name="status"><?php foreach (self::STATUSES as $status) : ?><option value="<?php echo esc_attr($status); ?>" <?php selected($row['status'], $status); ?>><?php echo esc_html(ucfirst($status)); ?></option><?php endforeach; ?></select> <button class="button"><?php esc_html_e('Save', 'dizzy-reservations-manager'); ?></button></form></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -73,35 +61,24 @@ final class AdminController
         $summary = $this->repository->reportSummary();
         $export = wp_nonce_url(admin_url('admin-post.php?action=dizzy_reservation_report_csv'), 'dizzy_reservation_report_csv');
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('Reservation Reports', 'dizzy-reservations-manager'); ?></h1>
-            <?php echo $this->cards([
-                __('Reservations', 'dizzy-reservations-manager') => $summary['reservations'],
-                __('Confirmed guests', 'dizzy-reservations-manager') => $summary['confirmed_guests'],
-                __('Waitlisted', 'dizzy-reservations-manager') => $summary['waitlisted'],
-            ]); ?>
-            <p><a class="button" href="<?php echo esc_url($export); ?>"><?php esc_html_e('Export CSV', 'dizzy-reservations-manager'); ?></a></p>
-            <table class="widefat striped">
-                <thead><tr><th><?php esc_html_e('Event', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Reservations', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Guests', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Capacity', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Usage', 'dizzy-reservations-manager'); ?></th></tr></thead>
-                <tbody>
-                <?php foreach ($this->repository->reportRows() as $row) : $capacity = (int) ($row['capacity'] ?? 0); $guests = (int) $row['guests']; ?>
-                    <tr><td><?php echo esc_html((string) $row['post_title']); ?></td><td><?php echo esc_html((string) $row['start_datetime']); ?></td><td><?php echo esc_html((string) $row['reservations']); ?></td><td><?php echo esc_html((string) $guests); ?></td><td><?php echo esc_html($capacity > 0 ? (string) $capacity : __('Unlimited', 'dizzy-reservations-manager')); ?></td><td><?php echo esc_html($capacity > 0 ? round($guests / $capacity * 100, 1) . '%' : '—'); ?></td></tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+        <div class="wrap"><h1><?php esc_html_e('Reservation Reports', 'dizzy-reservations-manager'); ?></h1>
+        <?php echo $this->cards([__('Reservations', 'dizzy-reservations-manager') => $summary['reservations'], __('Confirmed guests', 'dizzy-reservations-manager') => $summary['confirmed_guests'], __('Waitlisted', 'dizzy-reservations-manager') => $summary['waitlisted']]); ?>
+        <p><a class="button" href="<?php echo esc_url($export); ?>"><?php esc_html_e('Export CSV', 'dizzy-reservations-manager'); ?></a></p>
+        <table class="widefat striped"><thead><tr><th><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Time', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Reservations', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('People', 'dizzy-reservations-manager'); ?></th></tr></thead><tbody>
+        <?php foreach ($this->repository->reportRows() as $row) : ?><tr><td><?php echo esc_html((string) $row['reservation_date']); ?></td><td><?php echo esc_html(substr((string) $row['reservation_time'], 0, 5)); ?></td><td><?php echo esc_html((string) $row['reservations']); ?></td><td><?php echo esc_html((string) $row['guests']); ?></td></tr><?php endforeach; ?>
+        </tbody></table></div>
         <?php
     }
 
     public function status(): void
     {
-        $id = $this->authorizedId();
+        $this->guard();
+        $id = absint($_POST['reservation_id'] ?? 0);
         check_admin_referer('dizzy_reservation_' . $id);
         $status = sanitize_key((string) ($_POST['status'] ?? ''));
-        if (in_array($status, self::STATUSES, true)) {
-            $this->service->changeStatus($id, $status);
-        }
-        $this->redirect(self::MENU);
+        if (in_array($status, self::STATUSES, true)) $this->service->changeStatus($id, $status);
+        wp_safe_redirect(admin_url('admin.php?page=' . self::MENU));
+        exit;
     }
 
     public function exportCsv(): void
@@ -112,10 +89,8 @@ final class AdminController
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename=dizzy-reservation-report.csv');
         $output = fopen('php://output', 'wb');
-        fputcsv($output, ['Event', 'Date', 'Reservations', 'Guests', 'Capacity']);
-        foreach ($this->repository->reportRows() as $row) {
-            fputcsv($output, [$row['post_title'], $row['start_datetime'], $row['reservations'], $row['guests'], $row['capacity']]);
-        }
+        fputcsv($output, ['Date', 'Time', 'Reservations', 'People']);
+        foreach ($this->repository->reportRows() as $row) fputcsv($output, [$row['reservation_date'], $row['reservation_time'], $row['reservations'], $row['guests']]);
         fclose($output);
         exit;
     }
@@ -123,28 +98,12 @@ final class AdminController
     private function cards(array $items): string
     {
         $html = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0">';
-        foreach ($items as $label => $value) {
-            $html .= '<div style="background:#fff;border:1px solid #ccd0d4;padding:14px;min-width:150px"><strong style="font-size:22px;display:block">' . esc_html((string) $value) . '</strong>' . esc_html((string) $label) . '</div>';
-        }
+        foreach ($items as $label => $value) $html .= '<div style="background:#fff;border:1px solid #ccd0d4;padding:14px;min-width:150px"><strong style="font-size:22px;display:block">' . esc_html((string) $value) . '</strong>' . esc_html((string) $label) . '</div>';
         return $html . '</div>';
-    }
-
-    private function authorizedId(): int
-    {
-        $this->guard();
-        return absint($_POST['reservation_id'] ?? 0);
-    }
-
-    private function redirect(string $page): never
-    {
-        wp_safe_redirect(admin_url('admin.php?page=' . $page));
-        exit;
     }
 
     private function guard(): void
     {
-        if (! current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized', 'dizzy-reservations-manager'));
-        }
+        if (! current_user_can('manage_options')) wp_die(esc_html__('Unauthorized', 'dizzy-reservations-manager'));
     }
 }
