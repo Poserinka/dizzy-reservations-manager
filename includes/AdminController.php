@@ -71,7 +71,11 @@ final class AdminController
             <div class="dizzy-reservations-workspace">
                 <section class="dizzy-reservations-list">
                     <div class="dizzy-list-heading">
-                        <h2 id="dizzy-list-title"><?php esc_html_e('All Reservations', 'dizzy-reservations-manager'); ?></h2>
+                        <div class="dizzy-list-summary">
+                            <h2 id="dizzy-list-title"><?php esc_html_e('All Reservations', 'dizzy-reservations-manager'); ?></h2>
+                            <span><?php esc_html_e('Total reservations:', 'dizzy-reservations-manager'); ?> <strong id="dizzy-total-reservations"><?php echo esc_html((string) count($rows)); ?></strong></span>
+                            <span><?php esc_html_e('Total Guests:', 'dizzy-reservations-manager'); ?> <strong id="dizzy-total-guests"><?php echo esc_html((string) array_sum(array_map(static fn (array $row): int => (int) $row['guests'], $rows))); ?></strong></span>
+                        </div>
                         <button type="button" class="button-link" id="dizzy-show-all"><?php esc_html_e('Show all', 'dizzy-reservations-manager'); ?></button>
                     </div>
                     <div class="dizzy-reservations-table-wrap">
@@ -108,7 +112,7 @@ final class AdminController
             .dizzy-reservations-workspace{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(460px,.9fr);gap:24px;align-items:start;margin-top:14px}
             .dizzy-reservations-list,.dizzy-calendar-surface{background:#fff;border:1px solid #c3c4c7}
             .dizzy-list-heading{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #c3c4c7}
-            .dizzy-list-heading h2{margin:0;font-size:14px}
+            .dizzy-list-heading h2{margin:0;font-size:14px}.dizzy-list-summary{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.dizzy-list-summary>span{color:#50575e}.dizzy-list-summary strong{color:#1d2327}
             .dizzy-reservations-table-wrap{overflow-x:auto}
             .dizzy-reservations-table-wrap .widefat{border:0}
             .dizzy-reservations-table-wrap tr.is-calendar-hidden{display:none}
@@ -151,6 +155,8 @@ final class AdminController
             const monthLabel = document.getElementById('dizzy-calendar-month');
             const listTitle = document.getElementById('dizzy-list-title');
             const showAll = document.getElementById('dizzy-show-all');
+            const totalReservations = document.getElementById('dizzy-total-reservations');
+            const totalGuests = document.getElementById('dizzy-total-guests');
             const tableRows = Array.from(document.querySelectorAll('[data-reservation-date]'));
             const emptyRow = document.getElementById('dizzy-no-reservations');
             const locale = <?php echo wp_json_encode(str_replace('_', '-', determine_locale())); ?>;
@@ -176,6 +182,9 @@ final class AdminController
                     if (show) visible++;
                 });
                 emptyRow.hidden = !selected || visible > 0;
+                const filtered = selected ? rows.filter(row => row.date === selected) : rows;
+                totalReservations.textContent = String(filtered.length);
+                totalGuests.textContent = String(filtered.reduce((sum, row) => sum + Number(row.people || 0), 0));
                 showAll.hidden = !selected;
                 listTitle.textContent = selected
                     ? new Intl.DateTimeFormat(locale, {weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(new Date(selected + 'T12:00:00'))
