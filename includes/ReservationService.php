@@ -54,14 +54,14 @@ final class ReservationService
             'reservation_time' => $time,
             'guests' => $guests,
             'message' => $message,
-            'status' => 'pending',
+            'status' => 'confirmed',
         ]);
 
         $this->mailer->send(
             $email,
-            'Reservation received',
+            'Reservation confirmed',
             sprintf(
-                'Your reservation request for %s at %s has been received and is awaiting approval.',
+                'Your reservation for %s at %s is confirmed.',
                 wp_date(get_option('date_format'), $parsedDate->getTimestamp(), wp_timezone()),
                 $time
             )
