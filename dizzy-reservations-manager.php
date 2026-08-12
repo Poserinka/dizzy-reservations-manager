@@ -2,20 +2,19 @@
 /**
  * Plugin Name: Dizzy Reservations Manager
  * Plugin URI: https://github.com/Poserinka/dizzy-reservations-manager
- * Description: Event reservations, capacity management, waiting lists and reservation reports for Dizzy Events Manager.
- * Version: 3.0.0
+ * Description: Independent date and time reservations, guest management, messages and reservation reports.
+ * Version: 3.1.0
  * Author: Poserinka Design
  * Text Domain: dizzy-reservations-manager
  * Requires PHP: 8.2
  * Update URI: https://github.com/Poserinka/dizzy-reservations-manager
- * Requires Plugins: dizzy-events-manager
  */
 
 declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-define('DIZZY_RESERVATIONS_VERSION', '3.0.0');
+define('DIZZY_RESERVATIONS_VERSION', '3.1.0');
 define('DIZZY_RESERVATIONS_PATH', plugin_dir_path(__FILE__));
 
 require_once DIZZY_RESERVATIONS_PATH . 'includes/Autoloader.php';
