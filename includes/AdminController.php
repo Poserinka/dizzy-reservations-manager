@@ -21,6 +21,29 @@ final class AdminController
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_post_dizzy_reservation_status', [$this, 'status']);
         add_action('admin_post_dizzy_reservation_report_csv', [$this, 'exportCsv']);
+        add_action('admin_head', [$this, 'hideAdminNotices']);
+    }
+
+    public function hideAdminNotices(): void
+    {
+        $page = sanitize_key((string) ($_GET['page'] ?? ''));
+        if (! in_array($page, [self::MENU, self::REPORTS], true)) {
+            return;
+        }
+        echo '<style>
+            #wpbody-content > .notice,
+            #wpbody-content > .update-nag,
+            #wpbody-content > .updated,
+            #wpbody-content > .error,
+            #wpbody-content > div[class*="notice"],
+            #wpbody-content .wrap > .notice,
+            #wpbody-content .wrap > .update-nag,
+            .notice.notice-info,
+            .notice.notice-warning,
+            .notice.notice-error,
+            .notice.notice-success,
+            .mc4wp-is-dismissible {display:none!important}
+        </style>';
     }
 
     public function menu(): void
