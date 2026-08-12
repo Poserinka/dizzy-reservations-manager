@@ -48,14 +48,14 @@ final class AdminController
 
     public function menu(): void
     {
-        add_menu_page(__('Reservations Manager', 'dizzy-reservations-manager'), __('Reservations', 'dizzy-reservations-manager'), 'manage_options', self::MENU, [$this, 'reservations'], 'dashicons-clipboard', 26);
-        add_submenu_page(self::MENU, __('Reservations', 'dizzy-reservations-manager'), __('Reservations', 'dizzy-reservations-manager'), 'manage_options', self::MENU, [$this, 'reservations']);
+        add_menu_page(__('Reservations Manager', 'dizzy-reservations-manager'), __('Reservations', 'dizzy-reservations-manager'), ControllerRole::RESERVATIONS_CAP, self::MENU, [$this, 'reservations'], 'dashicons-clipboard', 26);
+        add_submenu_page(self::MENU, __('Reservations', 'dizzy-reservations-manager'), __('Reservations', 'dizzy-reservations-manager'), ControllerRole::RESERVATIONS_CAP, self::MENU, [$this, 'reservations']);
         add_submenu_page(self::MENU, __('Reservation Reports', 'dizzy-reservations-manager'), __('Reports', 'dizzy-reservations-manager'), 'manage_options', self::REPORTS, [$this, 'reports']);
     }
 
     public function reservations(): void
     {
-        $this->guard();
+        $this->guard(ControllerRole::RESERVATIONS_CAP);
         $rows = $this->repository->all();
         $calendarRows = array_map(static fn (array $row): array => [
             'id' => (int) $row['id'],
@@ -254,7 +254,7 @@ final class AdminController
 
     public function status(): void
     {
-        $this->guard();
+        $this->guard(ControllerRole::RESERVATIONS_CAP);
         $id = absint($_POST['reservation_id'] ?? 0);
         check_admin_referer('dizzy_reservation_' . $id);
         $status = sanitize_key((string) ($_POST['status'] ?? ''));
@@ -290,8 +290,8 @@ final class AdminController
         return $html . '</div>';
     }
 
-    private function guard(): void
+    private function guard(string $capability = 'manage_options'): void
     {
-        if (! current_user_can('manage_options')) wp_die(esc_html__('Unauthorized', 'dizzy-reservations-manager'));
+        if (! current_user_can($capability)) wp_die(esc_html__('Unauthorized', 'dizzy-reservations-manager'));
     }
 }
