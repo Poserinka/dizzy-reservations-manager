@@ -114,7 +114,7 @@ final class AdminController
             .dizzy-list-heading{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #c3c4c7}
             .dizzy-list-heading h2{margin:0;font-size:14px}.dizzy-list-summary{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.dizzy-list-summary>span{color:#50575e}.dizzy-list-summary strong{color:#1d2327}
             .dizzy-reservations-table-wrap{overflow-x:auto}
-            .dizzy-reservations-table-wrap .widefat{border:0}
+            .dizzy-reservations-table-wrap .widefat{border:0}.dizzy-reservations-table-wrap .widefat tbody td{vertical-align:middle}.dizzy-reservations-table-wrap .widefat tbody form{display:flex;align-items:center;gap:5px}
             .dizzy-reservations-table-wrap tr.is-calendar-hidden{display:none}
             .dizzy-calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
             .dizzy-calendar-nav{display:flex;align-items:center;gap:8px}
