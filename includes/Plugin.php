@@ -17,6 +17,7 @@ final class Plugin
         }
 
         self::$booted = true;
+        (new ControllerRole())->register();
         $repository = new ReservationRepository();
         $service = new ReservationService($repository, new Mailer());
 
