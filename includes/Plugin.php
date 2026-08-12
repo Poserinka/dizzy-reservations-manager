@@ -29,23 +29,12 @@ final class Plugin
         }
 
         $repository = new ReservationRepository();
-        $mailer = new Mailer();
-        $tickets = new TicketService($repository);
-        $reservationService = new ReservationService($events, $repository, $mailer, $tickets);
+        $service = new ReservationService($events, $repository, new Mailer());
 
-        $salesRepository = new TicketSalesRepository();
-        $mollie = new MollieClient();
-        $salesService = new TicketSalesService($events, $salesRepository, $mollie, $mailer);
-        $ticketExperience = new TicketExperience($salesRepository);
-
-        (new FrontendController($events, $reservationService))->register();
-        (new TicketSalesController($salesRepository, $salesService, $events))->register();
-        $ticketExperience->register();
-        $tickets->register();
+        (new FrontendController($events, $service))->register();
 
         if (is_admin()) {
-            (new AdminController($repository, $reservationService, $tickets, $events))->register();
-            (new TicketSalesAdmin($salesRepository, $events))->register();
+            (new AdminController($repository, $service))->register();
         }
     }
 }
