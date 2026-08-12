@@ -57,14 +57,21 @@ final class ReservationService
             'status' => 'confirmed',
         ]);
 
-        $this->mailer->send(
+        $this->mailer->sendTemplate(
             $email,
-            'Reservation confirmed',
-            sprintf(
-                'Your reservation for %s at %s is confirmed.',
-                wp_date(get_option('date_format'), $parsedDate->getTimestamp(), wp_timezone()),
-                $time
-            )
+            __('Reservation confirmed', 'dizzy-reservations-manager'),
+            'reservation-confirmed',
+            [
+                'reservation_id' => $id,
+                'name' => $name,
+                'email' => $email,
+                'phone' => $phone,
+                'date' => $parsedDate->format('d/m/Y'),
+                'time' => $time,
+                'guests' => $guests,
+                'message' => $message,
+                'status' => 'confirmed',
+            ]
         );
 
         return $id;
@@ -79,13 +86,33 @@ final class ReservationService
         }
 
         if (is_email((string) $row['email'])) {
-            $message = match ($status) {
-                'confirmed' => 'Your reservation is confirmed.',
-                'cancelled' => 'Your reservation is cancelled.',
-                'waitlisted' => 'Your reservation is on the waiting list.',
-                default => 'Your reservation is awaiting approval.',
+            $statusMessage = match ($status) {
+                'confirmed' => __('Reservation confirmed', 'dizzy-reservations-manager'),
+                'cancelled' => __('Reservation cancelled', 'dizzy-reservations-manager'),
+                'waitlisted' => __('Reservation waitlisted', 'dizzy-reservations-manager'),
+                default => __('Reservation pending', 'dizzy-reservations-manager'),
             };
-            $this->mailer->send((string) $row['email'], 'Reservation ' . ucfirst($status), $message);
+
+            $date = (string) ($row['reservation_date'] ?? '');
+            $parsedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date, wp_timezone());
+
+            $this->mailer->sendTemplate(
+                (string) $row['email'],
+                $statusMessage,
+                'reservation-status',
+                [
+                    'reservation_id' => $id,
+                    'name' => (string) $row['name'],
+                    'email' => (string) $row['email'],
+                    'phone' => (string) ($row['phone'] ?? ''),
+                    'date' => $parsedDate instanceof DateTimeImmutable ? $parsedDate->format('d/m/Y') : $date,
+                    'time' => substr((string) ($row['reservation_time'] ?? ''), 0, 5),
+                    'guests' => (int) $row['guests'],
+                    'message' => (string) ($row['notes'] ?? ''),
+                    'status' => $status,
+                    'status_message' => $statusMessage,
+                ]
+            );
         }
 
         return true;
