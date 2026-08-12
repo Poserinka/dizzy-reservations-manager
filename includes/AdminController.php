@@ -85,7 +85,7 @@ final class AdminController
                             <?php foreach ($rows as $row) : $id = (int) $row['id']; ?>
                                 <tr id="dizzy-reservation-<?php echo esc_attr((string) $id); ?>" data-reservation-date="<?php echo esc_attr((string) $row['reservation_date']); ?>">
                                     <td><strong><?php echo esc_html((string) $row['name']); ?></strong><br><?php echo esc_html((string) $row['email']); ?><br><?php echo esc_html((string) $row['phone']); ?></td>
-                                    <td><?php echo esc_html((string) $row['reservation_date']); ?></td>
+                                    <td><?php echo esc_html($this->formatDate((string) $row['reservation_date'])); ?></td>
                                     <td><?php echo esc_html(substr((string) $row['reservation_time'], 0, 5)); ?></td>
                                     <td><?php echo esc_html((string) $row['guests']); ?></td>
                                     <td><?php echo nl2br(esc_html((string) $row['notes'])); ?></td>
@@ -275,6 +275,12 @@ final class AdminController
         foreach ($this->repository->reportRows() as $row) fputcsv($output, [$row['reservation_date'], $row['reservation_time'], $row['reservations'], $row['guests']]);
         fclose($output);
         exit;
+    }
+
+    private function formatDate(string $date): string
+    {
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date, wp_timezone());
+        return $parsed instanceof \DateTimeImmutable ? $parsed->format('d/m/Y') : $date;
     }
 
     private function cards(array $items): string
