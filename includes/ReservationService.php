@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Dizzy\Reservations;
 
+use DateTimeImmutable;
 use RuntimeException;
 
 defined('ABSPATH') || exit;
 
 final class ReservationService
 {
+    public const TIMES = ['16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
+
     public function __construct(
-        private EventGateway $events,
         private ReservationRepository $repository,
         private Mailer $mailer
     ) {
@@ -19,41 +21,50 @@ final class ReservationService
 
     public function create(array $data): int
     {
-        $eventId = absint($data['event_id'] ?? 0);
-        $occurrenceId = absint($data['occurrence_id'] ?? 0);
         $name = sanitize_text_field((string) ($data['name'] ?? ''));
         $email = sanitize_email((string) ($data['email'] ?? ''));
+        $phone = sanitize_text_field((string) ($data['phone'] ?? ''));
+        $date = sanitize_text_field((string) ($data['reservation_date'] ?? ''));
+        $time = sanitize_text_field((string) ($data['reservation_time'] ?? ''));
         $guests = absint($data['guests'] ?? 0);
+        $message = sanitize_textarea_field((string) ($data['message'] ?? ''));
 
-        if ($this->events->occurrence($eventId, $occurrenceId) === null) {
-            throw new RuntimeException('Selected event date is unavailable.');
-        }
+        $parsedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date, wp_timezone());
+        $today = new DateTimeImmutable('today', wp_timezone());
 
-        if ($name === '' || ! is_email($email) || $guests < 1 || $guests > 100) {
+        if (
+            $name === ''
+            || ! is_email($email)
+            || $phone === ''
+            || $parsedDate === false
+            || $parsedDate < $today
+            || ! in_array($time, self::TIMES, true)
+            || $guests < 1
+            || $guests > 100
+            || $message === ''
+        ) {
             throw new RuntimeException('Invalid reservation details.');
         }
 
-        $capacity = absint(get_post_meta($eventId, '_dizzy_capacity', true));
-        $status = $capacity > 0 && $this->repository->reservedGuests($occurrenceId) + $guests > $capacity
-            ? 'waitlisted'
-            : 'pending';
-
         $id = $this->repository->create([
-            'event_id' => $eventId,
-            'occurrence_id' => $occurrenceId,
             'name' => $name,
             'email' => $email,
-            'phone' => sanitize_text_field((string) ($data['phone'] ?? '')),
+            'phone' => $phone,
+            'reservation_date' => $date,
+            'reservation_time' => $time,
             'guests' => $guests,
-            'status' => $status,
+            'message' => $message,
+            'status' => 'pending',
         ]);
 
         $this->mailer->send(
             $email,
-            $status === 'waitlisted' ? 'Added to the waiting list' : 'Reservation received',
-            $status === 'waitlisted'
-                ? 'The event is full. Your reservation is on the waiting list.'
-                : 'Your reservation is awaiting approval.'
+            'Reservation received',
+            sprintf(
+                'Your reservation request for %s at %s has been received and is awaiting approval.',
+                wp_date(get_option('date_format'), $parsedDate->getTimestamp(), wp_timezone()),
+                $time
+            )
         );
 
         return $id;
@@ -63,18 +74,7 @@ final class ReservationService
     {
         $row = $this->repository->find($id);
 
-        if ($row === null) {
-            return false;
-        }
-
-        if ($status === 'confirmed') {
-            $capacity = absint(get_post_meta((int) $row['event_id'], '_dizzy_capacity', true));
-            if ($capacity > 0 && $this->repository->reservedGuests((int) $row['occurrence_id'], $id) + (int) $row['guests'] > $capacity) {
-                return false;
-            }
-        }
-
-        if (! $this->repository->updateStatus($id, $status)) {
+        if ($row === null || ! $this->repository->updateStatus($id, $status)) {
             return false;
         }
 
