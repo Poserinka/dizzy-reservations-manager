@@ -22,6 +22,7 @@ final class Plugin
         $service = new ReservationService($repository, new Mailer());
 
         (new FrontendController($service))->register();
+        (new MobileApiController($repository, $service))->register();
 
         if (is_admin()) {
             (new AdminController($repository, $service))->register();
