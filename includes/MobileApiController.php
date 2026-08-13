@@ -69,6 +69,7 @@ final class MobileApiController
     public function reservations(WP_REST_Request $request): WP_REST_Response
     {
         $date = sanitize_text_field((string) $request->get_param('date'));
+        $date = $date !== '' ? $date : current_time('Y-m-d');
         $rows = array_values(array_filter(
             $this->repository->all(),
             static fn (array $row): bool => $date === '' || (string) ($row['reservation_date'] ?? '') === $date
