@@ -74,6 +74,18 @@ final class ReservationService
             ]
         );
 
+        do_action('dizzy_reservation_created', [
+            'reservation_id' => $id,
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+            'date' => $parsedDate->format('d/m/Y'),
+            'time' => $time,
+            'guests' => $guests,
+            'message' => $message,
+            'status' => 'confirmed',
+        ]);
+
         return $id;
     }
 
