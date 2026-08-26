@@ -86,7 +86,10 @@ final class ReservationRepository
         global $wpdb;
         return $wpdb->get_results(
             "SELECT reservation_date,reservation_time,
-            COUNT(id) reservations,COALESCE(SUM(guests),0) guests
+            COUNT(id) reservations,
+            COALESCE(SUM(guests),0) guests,
+            COALESCE(SUM(CASE WHEN status='confirmed' THEN guests ELSE 0 END),0) confirmed_guests,
+            COUNT(CASE WHEN status='waitlisted' THEN 1 END) waitlisted
             FROM {$this->table}
             GROUP BY reservation_date,reservation_time
             ORDER BY reservation_date DESC,reservation_time DESC",
