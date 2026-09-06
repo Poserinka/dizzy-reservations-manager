@@ -15,7 +15,8 @@ final class ReservationService
 
     public function __construct(
         private ReservationRepository $repository,
-        private Mailer $mailer
+        private Mailer $mailer,
+        private TableRepository $tables
     ) {
     }
 
@@ -28,6 +29,8 @@ final class ReservationService
         $time = sanitize_text_field((string) ($data['reservation_time'] ?? ''));
         $guests = absint($data['guests'] ?? 0);
         $message = sanitize_textarea_field((string) ($data['message'] ?? ''));
+        $tableId = absint($data['table_id'] ?? 0);
+        $tableSession = sanitize_key((string) ($data['table_session'] ?? ''));
 
         $parsedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date, wp_timezone());
         $today = new DateTimeImmutable('today', wp_timezone());
@@ -46,16 +49,33 @@ final class ReservationService
             throw new RuntimeException('Invalid reservation details.');
         }
 
-        $id = $this->repository->create([
-            'name' => $name,
-            'email' => $email,
-            'phone' => $phone,
-            'reservation_date' => $date,
-            'reservation_time' => $time,
-            'guests' => $guests,
-            'message' => $message,
-            'status' => 'confirmed',
-        ]);
+        $tablesEnabled = $this->tables->hasActiveTables();
+        if ($tablesEnabled && ($tableId < 1 || $tableSession === '')) {
+            throw new RuntimeException('Please select an available table.');
+        }
+
+        $table = $tableId > 0 ? $this->tables->find($tableId) : null;
+        if ($tablesEnabled && ($table === null || ! $this->tables->validateAndLock($tableId, $date, $time, $guests, $tableSession))) {
+            throw new RuntimeException('The selected table is no longer available.');
+        }
+
+        try {
+            $id = $this->repository->create([
+                'name' => $name,
+                'email' => $email,
+                'phone' => $phone,
+                'reservation_date' => $date,
+                'reservation_time' => $time,
+                'guests' => $guests,
+                'table_id' => $tableId,
+                'duration_minutes' => 120,
+                'message' => $message,
+                'status' => 'confirmed',
+            ]);
+            $this->tables->release($tableSession);
+        } finally {
+            if ($tablesEnabled && $tableId > 0) $this->tables->unlock($tableId);
+        }
 
         $this->mailer->sendTemplate(
             $email,
@@ -69,6 +89,7 @@ final class ReservationService
                 'date' => $parsedDate->format('d/m/Y'),
                 'time' => $time,
                 'guests' => $guests,
+                'table' => (string) ($table['code'] ?? ''),
                 'message' => $message,
                 'status' => 'confirmed',
             ]
@@ -82,6 +103,7 @@ final class ReservationService
             'date' => $parsedDate->format('d/m/Y'),
             'time' => $time,
             'guests' => $guests,
+            'table' => (string) ($table['code'] ?? ''),
             'message' => $message,
             'status' => 'confirmed',
         ]);

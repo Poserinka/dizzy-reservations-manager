@@ -4,7 +4,7 @@
  *
  * Available variables:
  * $site_name, $site_url, $reservation_id, $name, $email, $phone,
- * $date, $time, $guests, $message and $status.
+ * $date, $time, $guests, $table, $message and $status.
  *
  * This file may be edited as HTML. Keep dynamic values escaped as shown below.
  */
@@ -168,6 +168,11 @@ a[x-apple-data-detectors],
                      <tr>
                       <td align="center" style="padding:10px 0 5px;Margin:0"><h3 class="es-m-txt-c" style="Margin:0;font-family:arial, 'helvetica neue', helvetica, sans-serif;mso-line-height-rule:exactly;letter-spacing:0;font-size:20px;font-style:normal;font-weight:bold;line-height:30px;color:#333333">Guest&nbsp;Number: <?php echo esc_html((string) $guests); ?></h3></td>
                      </tr>
+                     <?php if (! empty($table)) : ?>
+                     <tr>
+                      <td align="center" style="padding:10px 0 5px;Margin:0"><h3 class="es-m-txt-c" style="Margin:0;font-family:arial, 'helvetica neue', helvetica, sans-serif;mso-line-height-rule:exactly;letter-spacing:0;font-size:20px;font-style:normal;font-weight:bold;line-height:30px;color:#333333">Table: <?php echo esc_html((string) $table); ?></h3></td>
+                     </tr>
+                     <?php endif; ?>
                      <tr>
                       <td align="center" style="padding:10px 0;Margin:0"><p style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;letter-spacing:0;font-weight:normal;color:#333333;font-size:14px">You can&nbsp;cancel your&nbsp;reservation by reaching us via phone.</p></td>
                      </tr>

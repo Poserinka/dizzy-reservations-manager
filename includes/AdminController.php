@@ -80,7 +80,7 @@ final class AdminController
                     </div>
                     <div class="dizzy-reservations-table-wrap">
                         <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Guest', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Time', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('People', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Message', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Status', 'dizzy-reservations-manager'); ?></th></tr></thead>
+                            <thead><tr><th><?php esc_html_e('Guest', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Time', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('People', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Table', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Message', 'dizzy-reservations-manager'); ?></th><th><?php esc_html_e('Status', 'dizzy-reservations-manager'); ?></th></tr></thead>
                             <tbody>
                             <?php foreach ($rows as $row) : $id = (int) $row['id']; ?>
                                 <tr id="dizzy-reservation-<?php echo esc_attr((string) $id); ?>" data-reservation-date="<?php echo esc_attr((string) $row['reservation_date']); ?>">
@@ -88,11 +88,12 @@ final class AdminController
                                     <td><?php echo esc_html($this->formatDate((string) $row['reservation_date'])); ?></td>
                                     <td><?php echo esc_html(substr((string) $row['reservation_time'], 0, 5)); ?></td>
                                     <td><?php echo esc_html((string) $row['guests']); ?></td>
+                                    <td><strong><?php echo esc_html((string) ($row['table_code'] ?: '—')); ?></strong><?php if (! empty($row['table_label']) && $row['table_label'] !== $row['table_code']) : ?><br><small><?php echo esc_html((string) $row['table_label']); ?></small><?php endif; ?></td>
                                     <td><?php echo nl2br(esc_html((string) $row['notes'])); ?></td>
                                     <td><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="dizzy_reservation_status"><input type="hidden" name="reservation_id" value="<?php echo esc_attr((string) $id); ?>"><?php wp_nonce_field('dizzy_reservation_' . $id); ?><select name="status"><?php foreach (self::STATUSES as $status) : ?><option value="<?php echo esc_attr($status); ?>" <?php selected($row['status'], $status); ?>><?php echo esc_html(ucfirst($status)); ?></option><?php endforeach; ?></select> <button class="button"><?php esc_html_e('Save', 'dizzy-reservations-manager'); ?></button></form></td>
                                 </tr>
                             <?php endforeach; ?>
-                            <tr id="dizzy-no-reservations" hidden><td colspan="6"><?php esc_html_e('No reservations for this date.', 'dizzy-reservations-manager'); ?></td></tr>
+                            <tr id="dizzy-no-reservations" hidden><td colspan="7"><?php esc_html_e('No reservations for this date.', 'dizzy-reservations-manager'); ?></td></tr>
                             </tbody>
                         </table>
                     </div>

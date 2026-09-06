@@ -31,6 +31,8 @@ final class ReservationRepository
             'reservation_date' => (string) $data['reservation_date'],
             'reservation_time' => (string) $data['reservation_time'],
             'guests' => (int) $data['guests'],
+            'table_id' => (int) ($data['table_id'] ?? 0),
+            'duration_minutes' => (int) ($data['duration_minutes'] ?? 120),
             'status' => (string) $data['status'],
             'notes' => (string) $data['message'],
             'created_at' => $now,
@@ -54,7 +56,8 @@ final class ReservationRepository
     public function all(): array
     {
         global $wpdb;
-        return $wpdb->get_results("SELECT * FROM {$this->table} ORDER BY reservation_date DESC,reservation_time DESC,created_at DESC", ARRAY_A) ?: [];
+        $tables = $wpdb->prefix . 'dizzy_reservation_tables';
+        return $wpdb->get_results("SELECT r.*,t.code table_code,t.label table_label FROM {$this->table} r LEFT JOIN {$tables} t ON t.id=r.table_id ORDER BY r.reservation_date DESC,r.reservation_time DESC,r.created_at DESC", ARRAY_A) ?: [];
     }
 
     public function updateStatus(int $id, string $status): bool

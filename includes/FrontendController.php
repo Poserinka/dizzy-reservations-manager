@@ -1,239 +1,50 @@
 <?php
-
 declare(strict_types=1);
-
 namespace Dizzy\Reservations;
-
 use Throwable;
-
 defined('ABSPATH') || exit;
 
 final class FrontendController
 {
-    public function __construct(private ReservationService $service)
-    {
-    }
-
+    public function __construct(private ReservationService $service, private TableRepository $tables) {}
     public function register(): void
     {
-        add_shortcode('dizzy_reservation_form', [$this, 'shortcode']);
-        add_action('template_redirect', [$this, 'submit']);
-        add_action('wp_ajax_dizzy_reservation_submit', [$this, 'ajaxSubmit']);
-        add_action('wp_ajax_nopriv_dizzy_reservation_submit', [$this, 'ajaxSubmit']);
-    }
-
-    public function shortcode(array $atts = []): string
-    {
-        ob_start();
-
-        if (isset($_GET['reservation'])) {
-            $result = sanitize_key(wp_unslash((string) $_GET['reservation']));
-            echo '<div class="dizzy-reservation-message ' . esc_attr($result) . '">' . esc_html(
-                $result === 'success'
-                    ? __('Reservation received.', 'dizzy-reservations-manager')
-                    : __('Reservation could not be completed. Please check all fields.', 'dizzy-reservations-manager')
-            ) . '</div>';
+        add_shortcode('dizzy_reservation_form', [$this,'shortcode']);
+        add_action('template_redirect', [$this,'submit']);
+        foreach (['dizzy_reservation_submit'=>'ajaxSubmit','dizzy_reservation_table_availability'=>'ajaxAvailability','dizzy_reservation_table_hold'=>'ajaxHold','dizzy_reservation_table_release'=>'ajaxRelease'] as $action=>$method) {
+            add_action('wp_ajax_'.$action, [$this,$method]); add_action('wp_ajax_nopriv_'.$action, [$this,$method]);
         }
-        ?>
+    }
+    public function shortcode(array $atts=[]): string
+    {
+        $session=strtolower(wp_generate_uuid4()); $hasTables=$this->tables->hasActiveTables();
+        $background=(string)get_option('dizzy_reservation_floor_plan',DIZZY_RESERVATIONS_URL.'assets/images/dizzy-seat-map.png'); ob_start(); ?>
         <style>
-            .dizzy-reservation-form{--dr-border:#3d4143;display:grid;gap:27px;width:100%}
-            .dizzy-reservation-field{margin:0}
-            .dizzy-reservation-form label,.dizzy-reservation-legend{display:block;margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase}
-            .dizzy-reservation-form input[type="text"],.dizzy-reservation-form input[type="email"],.dizzy-reservation-form input[type="tel"],.dizzy-reservation-form input[type="date"],.dizzy-reservation-form input[type="number"],.dizzy-reservation-form textarea{box-sizing:border-box;width:100%;min-height:49px;padding:12px 15px;border:1px solid var(--dr-border);border-radius:0;background:transparent;color:inherit;font:inherit}
-            .dizzy-reservation-form textarea{min-height:160px;resize:vertical}
-            .dizzy-reservation-times{display:flex;flex-wrap:wrap;gap:12px 24px}
-            .dizzy-reservation-time{display:inline-flex!important;align-items:center;gap:7px;margin:0!important;letter-spacing:.4px!important;text-transform:none!important;cursor:pointer}
-            .dizzy-reservation-time input{margin:0}
-            .dizzy-reservation-submit{width:auto;padding:16px 37px;border:0;border-radius:0;background:#fff;color:#111;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-            .dizzy-reservation-message{margin:0 0 22px;padding:14px;border:1px solid currentColor}
-            .dizzy-reservation-submit:disabled{cursor:wait;opacity:.65}
-            .dizzy-reservation-overlay{align-items:center;background:rgba(0,0,0,.82);display:none;inset:0;justify-content:center;padding:18px;position:fixed;z-index:999999}
-            .dizzy-reservation-overlay.is-open{display:flex}
-            .dizzy-reservation-modal{background:#191919;border:0;box-shadow:0 24px 70px rgba(0,0,0,.55);box-sizing:border-box;color:#fff;max-width:720px;padding:38px;position:relative;text-align:left;width:100%}
-            .dizzy-reservation-modal h2,.dizzy-reservation-modal p{color:inherit}
-            .dizzy-reservation-modal h2{margin:0 0 10px}
-            .dizzy-reservation-modal p{line-height:1.6;margin:0}
-            .dizzy-reservation-close,.dizzy-reservation-close:hover,.dizzy-reservation-close:focus,.dizzy-reservation-close:focus-visible{-webkit-appearance:none!important;appearance:none!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#fff!important;font-size:28px!important;line-height:1!important;outline:0!important;padding:8px!important;position:absolute;right:1px;top:1px}
-            .dizzy-reservation-result{background:#1d1d1d;padding:24px}
-            .dizzy-reservation-modal.is-success .dizzy-reservation-result{border-left:4px solid #46b450}
-            .dizzy-reservation-modal.is-error .dizzy-reservation-result{border-left:4px solid #dc3232}
-            @media(max-width:600px){.dizzy-reservation-modal{padding:38px 18px 24px}}
+        .dizzy-reservation-form{--dr-border:#3d4143;display:grid;gap:27px;width:100%}.dizzy-reservation-field{margin:0}.dizzy-reservation-form label,.dizzy-reservation-legend{display:block;margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase}.dizzy-reservation-form input[type=text],.dizzy-reservation-form input[type=email],.dizzy-reservation-form input[type=tel],.dizzy-reservation-form input[type=date],.dizzy-reservation-form input[type=number],.dizzy-reservation-form textarea{box-sizing:border-box;width:100%;min-height:49px;padding:12px 15px;border:1px solid var(--dr-border);border-radius:0;background:transparent;color:inherit;font:inherit}.dizzy-reservation-form textarea{min-height:160px;resize:vertical}.dizzy-reservation-times{display:flex;flex-wrap:wrap;gap:12px 24px}.dizzy-reservation-time{display:inline-flex!important;align-items:center;gap:7px;margin:0!important;letter-spacing:.4px!important;text-transform:none!important}.dizzy-reservation-submit{padding:16px 37px;border:0;background:#fff;color:#111;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase}.dizzy-table-picker[hidden]{display:none}.dizzy-table-picker-stage{position:relative;width:100%;aspect-ratio:1;background:#fff center/100% 100% no-repeat;border:1px solid var(--dr-border);overflow:hidden}.dizzy-customer-table{position:absolute;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:2px solid #fff;background:#27935b;color:#fff;font-weight:800;cursor:pointer}.dizzy-customer-table.round{border-radius:50%}.dizzy-customer-table.booked{background:#b93636;cursor:not-allowed}.dizzy-customer-table.too_small{background:#72777c;cursor:not-allowed}.dizzy-customer-table.selected{background:#d99000;box-shadow:0 0 0 4px rgba(255,185,0,.4)}.dizzy-table-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px}.dizzy-table-legend i{display:inline-block;width:11px;height:11px;margin-right:5px;border-radius:50%}.dizzy-reservation-overlay{align-items:center;background:rgba(0,0,0,.82);display:none;inset:0;justify-content:center;padding:18px;position:fixed;z-index:999999}.dizzy-reservation-overlay.is-open{display:flex}.dizzy-reservation-modal{background:#191919;box-shadow:0 24px 70px rgba(0,0,0,.55);box-sizing:border-box;color:#fff;max-width:720px;padding:38px;position:relative;width:100%}.dizzy-reservation-close{appearance:none!important;background:transparent!important;border:0!important;box-shadow:none!important;color:#fff!important;font-size:28px!important;position:absolute;right:1px;top:1px}.dizzy-reservation-result{background:#1d1d1d;padding:24px}.dizzy-reservation-modal.is-success .dizzy-reservation-result{border-left:4px solid #46b450}.dizzy-reservation-modal.is-error .dizzy-reservation-result{border-left:4px solid #dc3232}@media(max-width:600px){.dizzy-customer-table{font-size:10px}}
         </style>
-        <div class="dizzy-reservation-shell">
-        <form method="post" class="dizzy-reservation-form">
-            <?php wp_nonce_field('dizzy_reservation_submit', 'dizzy_reservation_nonce'); ?>
-            <input type="hidden" name="dizzy_reservation_submit" value="1">
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-name"><?php esc_html_e('Your name', 'dizzy-reservations-manager'); ?>*</label>
-                <input id="dizzy-reservation-name" type="text" name="name" autocomplete="name" required>
-            </p>
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-email"><?php esc_html_e('Your email', 'dizzy-reservations-manager'); ?>*</label>
-                <input id="dizzy-reservation-email" type="email" name="email" autocomplete="email" required>
-            </p>
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-phone"><?php esc_html_e('Phone', 'dizzy-reservations-manager'); ?>*</label>
-                <input id="dizzy-reservation-phone" type="tel" name="phone" autocomplete="tel" required>
-            </p>
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-date"><?php esc_html_e('Date', 'dizzy-reservations-manager'); ?>*</label>
-                <input id="dizzy-reservation-date" type="date" name="reservation_date" min="<?php echo esc_attr(wp_date('Y-m-d')); ?>" required>
-            </p>
-
-            <div class="dizzy-reservation-field">
-                <span class="dizzy-reservation-legend"><?php esc_html_e('Time', 'dizzy-reservations-manager'); ?>*</span>
-                <div class="dizzy-reservation-times">
-                    <?php foreach (ReservationService::TIMES as $time) : ?>
-                        <label class="dizzy-reservation-time"><input type="radio" name="reservation_time" value="<?php echo esc_attr($time); ?>" required> <span><?php echo esc_html($time); ?></span></label>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-guests"><?php esc_html_e('Number of people', 'dizzy-reservations-manager'); ?>*</label>
-                <input id="dizzy-reservation-guests" type="number" name="guests" min="1" max="100" value="2" required>
-            </p>
-
-            <p class="dizzy-reservation-field">
-                <label for="dizzy-reservation-message"><?php esc_html_e('Your message', 'dizzy-reservations-manager'); ?>*</label>
-                <textarea id="dizzy-reservation-message" name="message" required></textarea>
-            </p>
-
-            <p class="dizzy-reservation-field">
-                <button class="dizzy-reservation-submit" type="submit"><?php esc_html_e('Send', 'dizzy-reservations-manager'); ?></button>
-            </p>
-        </form>
-        <div class="dizzy-reservation-overlay" role="dialog" aria-modal="true" aria-labelledby="dizzy-reservation-result-heading" aria-hidden="true">
-            <div class="dizzy-reservation-modal">
-                <button type="button" class="dizzy-reservation-close" aria-label="<?php esc_attr_e('Close', 'dizzy-reservations-manager'); ?>">&times;</button>
-                <div class="dizzy-reservation-result" role="alert"></div>
-            </div>
-        </div>
-        </div>
+        <div class="dizzy-reservation-shell"><form method="post" class="dizzy-reservation-form"><?php wp_nonce_field('dizzy_reservation_submit','dizzy_reservation_nonce'); ?>
+        <input type="hidden" name="dizzy_reservation_submit" value="1"><input type="hidden" name="table_id"><input type="hidden" name="table_session" value="<?php echo esc_attr($session); ?>">
+        <?php $this->field('name',__('Your name','dizzy-reservations-manager'),'text','name'); $this->field('email',__('Your email','dizzy-reservations-manager'),'email','email'); $this->field('phone',__('Phone','dizzy-reservations-manager'),'tel','tel'); ?>
+        <p class="dizzy-reservation-field"><label for="dizzy-reservation-date"><?php esc_html_e('Date','dizzy-reservations-manager'); ?>*</label><input id="dizzy-reservation-date" type="date" name="reservation_date" min="<?php echo esc_attr(wp_date('Y-m-d')); ?>" required></p>
+        <div class="dizzy-reservation-field"><span class="dizzy-reservation-legend"><?php esc_html_e('Time','dizzy-reservations-manager'); ?>*</span><div class="dizzy-reservation-times"><?php foreach(ReservationService::TIMES as $time): ?><label class="dizzy-reservation-time"><input type="radio" name="reservation_time" value="<?php echo esc_attr($time); ?>" required> <span><?php echo esc_html($time); ?></span></label><?php endforeach; ?></div></div>
+        <p class="dizzy-reservation-field"><label for="dizzy-reservation-guests"><?php esc_html_e('Number of people','dizzy-reservations-manager'); ?>*</label><input id="dizzy-reservation-guests" type="number" name="guests" min="1" max="100" value="2" required></p>
+        <?php if($hasTables): ?><div class="dizzy-reservation-field dizzy-table-picker" hidden><span class="dizzy-reservation-legend"><?php esc_html_e('Choose a table','dizzy-reservations-manager'); ?>*</span><p><?php esc_html_e('Select a green table. Click it again to deselect.','dizzy-reservations-manager'); ?></p><div class="dizzy-table-picker-stage" style="background-image:url('<?php echo esc_url($background); ?>')"></div><div class="dizzy-table-legend"><span><i style="background:#27935b"></i><?php esc_html_e('Available','dizzy-reservations-manager'); ?></span><span><i style="background:#b93636"></i><?php esc_html_e('Occupied','dizzy-reservations-manager'); ?></span><span><i style="background:#d99000"></i><?php esc_html_e('Selected','dizzy-reservations-manager'); ?></span></div></div><?php endif; ?>
+        <p class="dizzy-reservation-field"><label for="dizzy-reservation-message"><?php esc_html_e('Your message','dizzy-reservations-manager'); ?>*</label><textarea id="dizzy-reservation-message" name="message" required></textarea></p><p><button class="dizzy-reservation-submit" type="submit"><?php esc_html_e('Send','dizzy-reservations-manager'); ?></button></p></form>
+        <div class="dizzy-reservation-overlay" role="dialog" aria-modal="true" aria-hidden="true"><div class="dizzy-reservation-modal"><button type="button" class="dizzy-reservation-close">&times;</button><div class="dizzy-reservation-result" role="alert"></div></div></div></div>
         <script>
-        (() => {
-            const shell = document.currentScript.previousElementSibling;
-            if (!shell || !shell.classList.contains('dizzy-reservation-shell')) return;
-            const form = shell.querySelector('.dizzy-reservation-form');
-            const overlay = shell.querySelector('.dizzy-reservation-overlay');
-            const modal = shell.querySelector('.dizzy-reservation-modal');
-            const result = shell.querySelector('.dizzy-reservation-result');
-            const close = shell.querySelector('.dizzy-reservation-close');
-            const submit = form.querySelector('.dizzy-reservation-submit');
-            const ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
-            const sendLabel = <?php echo wp_json_encode(__('Send', 'dizzy-reservations-manager')); ?>;
-            const sendingLabel = <?php echo wp_json_encode(__('Sending…', 'dizzy-reservations-manager')); ?>;
-            const genericError = <?php echo wp_json_encode(__('Reservation could not be completed. Please check all fields and try again.', 'dizzy-reservations-manager')); ?>;
-
-            const open = (message, success) => {
-                result.innerHTML = '';
-                const heading = document.createElement('h2');
-                heading.id = 'dizzy-reservation-result-heading';
-                heading.textContent = success
-                    ? <?php echo wp_json_encode(__('Reservation confirmed', 'dizzy-reservations-manager')); ?>
-                    : <?php echo wp_json_encode(__('Reservation failed', 'dizzy-reservations-manager')); ?>;
-                const text = document.createElement('p');
-                text.textContent = message;
-                result.append(heading, text);
-                modal.classList.toggle('is-success', success);
-                modal.classList.toggle('is-error', !success);
-                overlay.classList.add('is-open');
-                overlay.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden';
-                close.focus();
-            };
-
-            const shut = () => {
-                overlay.classList.remove('is-open');
-                overlay.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = '';
-            };
-
-            form.addEventListener('submit', async event => {
-                event.preventDefault();
-                if (!form.reportValidity()) return;
-                submit.disabled = true;
-                submit.textContent = sendingLabel;
-                const body = new FormData(form);
-                body.set('action', 'dizzy_reservation_submit');
-                try {
-                    const response = await fetch(ajaxUrl, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        body
-                    });
-                    const json = await response.json();
-                    if (!response.ok || !json.success) {
-                        throw new Error(json.data?.message || genericError);
-                    }
-                    form.reset();
-                    const guests = form.querySelector('[name="guests"]');
-                    if (guests) guests.value = '2';
-                    open(json.data.message, true);
-                } catch (error) {
-                    open(error instanceof Error ? error.message : genericError, false);
-                } finally {
-                    submit.disabled = false;
-                    submit.textContent = sendLabel;
-                }
-            });
-
-            close.addEventListener('click', shut);
-            overlay.addEventListener('click', event => { if (event.target === overlay) shut(); });
-            document.addEventListener('keydown', event => { if (event.key === 'Escape' && overlay.classList.contains('is-open')) shut(); });
-        })();
-        </script>
-        <?php
-        return (string) ob_get_clean();
+        (()=>{const shell=document.currentScript.previousElementSibling,form=shell.querySelector('form'),overlay=shell.querySelector('.dizzy-reservation-overlay'),modal=shell.querySelector('.dizzy-reservation-modal'),result=shell.querySelector('.dizzy-reservation-result'),close=shell.querySelector('.dizzy-reservation-close'),submit=form.querySelector('.dizzy-reservation-submit'),picker=form.querySelector('.dizzy-table-picker'),stage=form.querySelector('.dizzy-table-picker-stage'),tableId=form.querySelector('[name=table_id]'),session=form.querySelector('[name=table_session]'),ajaxUrl=<?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>,nonce=form.querySelector('[name=dizzy_reservation_nonce]').value;let loading=false,selected='';
+        const vals=()=>({date:form.querySelector('[name=reservation_date]').value,time:form.querySelector('[name=reservation_time]:checked')?.value||'',guests:form.querySelector('[name=guests]').value});const call=async(action,extra={})=>{const body=new FormData();body.set('action',action);body.set('dizzy_reservation_nonce',nonce);body.set('table_session',session.value);Object.entries({...vals(),...extra}).forEach(([k,v])=>body.set(k,v));const r=await fetch(ajaxUrl,{method:'POST',credentials:'same-origin',body}),j=await r.json();if(!j.success)throw new Error(j.data?.message||'Request failed');return j.data};
+        function draw(tables){stage.innerHTML='';tables.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='dizzy-customer-table '+t.shape+' '+t.state+(String(t.id)===selected?' selected':'');b.textContent=t.code;b.disabled=t.state!=='available'&&String(t.id)!==selected;Object.assign(b.style,{left:t.pos_x+'%',top:t.pos_y+'%',width:t.width+'%',height:t.height+'%',transform:'rotate('+t.rotation+'deg)'});b.title=t.label+' · '+t.capacity+' people';b.onclick=async()=>{if(loading)return;loading=true;try{if(String(t.id)===selected){await call('dizzy_reservation_table_release');selected='';tableId.value=''}else{await call('dizzy_reservation_table_hold',{table_id:t.id});selected=String(t.id);tableId.value=t.id}await refresh(false)}catch(e){alert(e.message);selected='';tableId.value='';await refresh(false)}finally{loading=false}};stage.appendChild(b)})}
+        async function refresh(clear=true){if(!picker)return;const v=vals();if(clear){selected='';tableId.value='';await call('dizzy_reservation_table_release').catch(()=>{})}if(!v.date||!v.time||!v.guests){picker.hidden=true;stage.innerHTML='';return}picker.hidden=false;try{draw((await call('dizzy_reservation_table_availability')).tables)}catch(e){stage.innerHTML='<span style="padding:12px;display:block">'+e.message+'</span>'}}form.querySelectorAll('[name=reservation_date],[name=reservation_time],[name=guests]').forEach(x=>x.addEventListener('change',()=>refresh(true)));
+        const open=(m,ok)=>{result.innerHTML='<h2>'+(ok?'Reservation confirmed':'Reservation failed')+'</h2><p></p>';result.querySelector('p').textContent=m;modal.classList.toggle('is-success',ok);modal.classList.toggle('is-error',!ok);overlay.classList.add('is-open')};close.onclick=()=>overlay.classList.remove('is-open');overlay.onclick=e=>{if(e.target===overlay)close.click()};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;if(picker&&!tableId.value){open('Please select an available table.',false);return}submit.disabled=true;const body=new FormData(form);body.set('action','dizzy_reservation_submit');try{const r=await fetch(ajaxUrl,{method:'POST',credentials:'same-origin',body}),j=await r.json();if(!j.success)throw new Error(j.data?.message||'Reservation could not be completed.');form.reset();form.querySelector('[name=guests]').value='2';selected='';tableId.value='';if(picker)picker.hidden=true;open(j.data.message,true)}catch(err){open(err.message||'Reservation could not be completed.',false)}finally{submit.disabled=false}}})();
+        </script><?php return(string)ob_get_clean();
     }
-
-    public function ajaxSubmit(): void
-    {
-        $nonce = sanitize_text_field(wp_unslash((string) ($_POST['dizzy_reservation_nonce'] ?? '')));
-
-        if (! wp_verify_nonce($nonce, 'dizzy_reservation_submit')) {
-            wp_send_json_error([
-                'message' => __('Your session expired. Refresh the page and try again.', 'dizzy-reservations-manager'),
-            ], 403);
-        }
-
-        try {
-            $this->service->create(wp_unslash($_POST));
-            wp_send_json_success([
-                'message' => __('Your reservation is confirmed. A confirmation email has been sent.', 'dizzy-reservations-manager'),
-            ]);
-        } catch (Throwable $exception) {
-            error_log('Dizzy AJAX reservation failed: ' . $exception->getMessage());
-            wp_send_json_error([
-                'message' => __('Reservation could not be completed. Please check all fields and try again.', 'dizzy-reservations-manager'),
-            ], 400);
-        }
-    }
-
-    public function submit(): void
-    {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || ! isset($_POST['dizzy_reservation_submit'])) {
-            return;
-        }
-
-        $nonce = sanitize_text_field(wp_unslash((string) ($_POST['dizzy_reservation_nonce'] ?? '')));
-        if (! wp_verify_nonce($nonce, 'dizzy_reservation_submit')) {
-            return;
-        }
-
-        try {
-            $this->service->create(wp_unslash($_POST));
-            $result = 'success';
-        } catch (Throwable $exception) {
-            error_log('Dizzy reservation failed: ' . $exception->getMessage());
-            $result = 'error';
-        }
-
-        wp_safe_redirect(add_query_arg('reservation', $result, wp_get_referer() ?: home_url('/')));
-        exit;
-    }
+    public function ajaxAvailability():void{$this->verify();[$d,$t,$g,$s]=$this->requestData();wp_send_json_success(['tables'=>$this->tables->availability($d,$t,$g,$s)]);}
+    public function ajaxHold():void{$this->verify();[$d,$t,$g,$s]=$this->requestData();$id=absint($_POST['table_id']??0);if($id<1||!$this->tables->hold($id,$d,$t,$g,$s))wp_send_json_error(['message'=>__('That table is no longer available. Please choose another table.','dizzy-reservations-manager')],409);wp_send_json_success();}
+    public function ajaxRelease():void{$this->verify();$s=sanitize_key((string)($_POST['table_session']??''));if($s!=='')$this->tables->release($s);wp_send_json_success();}
+    public function ajaxSubmit():void{$this->verify();try{$this->service->create(wp_unslash($_POST));wp_send_json_success(['message'=>__('Your reservation is confirmed. A confirmation email has been sent.','dizzy-reservations-manager')]);}catch(Throwable $e){error_log('Dizzy AJAX reservation failed: '.$e->getMessage());wp_send_json_error(['message'=>$e->getMessage()],400);}}
+    public function submit():void{if(($_SERVER['REQUEST_METHOD']??'')!=='POST'||!isset($_POST['dizzy_reservation_submit']))return;$this->verify();try{$this->service->create(wp_unslash($_POST));$r='success';}catch(Throwable $e){$r='error';}wp_safe_redirect(add_query_arg('reservation',$r,wp_get_referer()?:home_url('/')));exit;}
+    private function requestData():array{$d=sanitize_text_field((string)($_POST['date']??''));$t=sanitize_text_field((string)($_POST['time']??''));$g=absint($_POST['guests']??0);$s=sanitize_key((string)($_POST['table_session']??''));$p=\DateTimeImmutable::createFromFormat('!Y-m-d',$d,wp_timezone());if(!$p||$p<new \DateTimeImmutable('today',wp_timezone())||!in_array($t,ReservationService::TIMES,true)||$g<1||$g>100||$s==='')wp_send_json_error(['message'=>__('Choose a valid date, time and guest count.','dizzy-reservations-manager')],400);return[$d,$t,$g,$s];}
+    private function verify():void{$n=sanitize_text_field(wp_unslash((string)($_POST['dizzy_reservation_nonce']??'')));if(!wp_verify_nonce($n,'dizzy_reservation_submit'))wp_send_json_error(['message'=>__('Your session expired. Refresh the page and try again.','dizzy-reservations-manager')],403);}
+    private function field(string $n,string $l,string $t,string $a):void{echo'<p class="dizzy-reservation-field"><label for="dizzy-reservation-'.esc_attr($n).'">'.esc_html($l).'*</label><input id="dizzy-reservation-'.esc_attr($n).'" type="'.esc_attr($t).'" name="'.esc_attr($n).'" autocomplete="'.esc_attr($a).'" required></p>';}
 }

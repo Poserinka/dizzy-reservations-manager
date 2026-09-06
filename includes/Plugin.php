@@ -19,13 +19,15 @@ final class Plugin
         self::$booted = true;
         (new ControllerRole())->register();
         $repository = new ReservationRepository();
-        $service = new ReservationService($repository, new Mailer());
+        $tables = new TableRepository();
+        $service = new ReservationService($repository, new Mailer(), $tables);
 
-        (new FrontendController($service))->register();
+        (new FrontendController($service, $tables))->register();
         (new MobileApiController($repository, $service))->register();
 
         if (is_admin()) {
             (new AdminController($repository, $service))->register();
+            (new TablesAdminController($tables))->register();
         }
     }
 }

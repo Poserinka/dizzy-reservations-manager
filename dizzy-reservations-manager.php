@@ -3,7 +3,7 @@
  * Plugin Name: Dizzy Reservations Manager
  * Plugin URI: https://github.com/Poserinka/dizzy-reservations-manager
  * Description: Independent date and time reservations, guest management, messages and reservation reports.
- * Version: 3.8.2
+ * Version: 3.9.0
  * Author: Poserinka Design
  * Text Domain: dizzy-reservations-manager
  * Requires PHP: 8.2
@@ -14,8 +14,9 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-define('DIZZY_RESERVATIONS_VERSION', '3.8.2');
+define('DIZZY_RESERVATIONS_VERSION', '3.9.0');
 define('DIZZY_RESERVATIONS_PATH', plugin_dir_path(__FILE__));
+define('DIZZY_RESERVATIONS_URL', plugin_dir_url(__FILE__));
 
 require_once DIZZY_RESERVATIONS_PATH . 'includes/Autoloader.php';
 \Dizzy\Reservations\Autoloader::register();
