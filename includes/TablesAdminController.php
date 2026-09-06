@@ -92,11 +92,11 @@ final class TablesAdminController
             let items=<?php echo wp_json_encode(array_map(static fn(array $r): array => ['id'=>(int)$r['id'],'code'=>$r['code'],'label'=>$r['label'],'capacity'=>(int)$r['capacity'],'shape'=>$r['shape'],'x'=>(float)$r['pos_x'],'y'=>(float)$r['pos_y'],'width'=>(float)$r['width'],'height'=>(float)$r['height'],'rotation'=>(float)$r['rotation'],'active'=>(bool)$r['active']], $rows)); ?>, selected=-1;
             const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
             const anchors={
-                A8:[6,5,5,6],A7:[6,13.4,5,6],A6:[6,22.2,5,6],A5:[6,31.4,5,6],A4:[6,39.5,5,6],A3:[6,48.1,5,6],A2:[6,57,5,6],A1:[6,66.1,5,6],A0:[1.7,83,5,8],
-                D1:[29.4,20.5,6,6],D2:[37.5,20.5,6,6],D3:[45.2,20.5,6,6],D4:[53.2,20.5,6,6],D5:[61,20.5,6,6],
-                B3:[24.6,36.3,10,10],B2:[24.6,52.3,10,10],B1:[24.6,67.5,10,10],B0:[20.3,91.4,15,6],
-                C2:[42.6,42.8,9,7],C3:[57.4,42.8,9,7],C1:[42.6,64.2,9,7],C4:[57.4,64.2,9,7],
-                E1:[40,83.8,7,6],E2:[49,83.8,7,6],F1:[73,87.4,6,8],F2:[82.5,87.4,10,8]
+                A8:[6.15,4.95,5.15,6.25],A7:[6.15,13.45,5.15,6.25],A6:[6.15,21.95,5.15,6.25],A5:[6.15,30.45,5.15,6.25],A4:[6.15,38.95,5.15,6.25],A3:[6.15,47.45,5.15,6.25],A2:[6.15,55.95,5.15,6.25],A1:[6.15,64.45,5.15,6.25],A0:[1.9,82.95,5.15,9],
+                D1:[30.05,20.65,5.25,5.25],D2:[38,20.65,5.25,5.25],D3:[46,20.65,5.25,5.25],D4:[54,20.65,5.25,5.25],D5:[62,20.65,5.25,5.25],
+                B3:[25.9,36.65,7.95,7.95],B2:[25.9,52.05,7.95,7.95],B1:[25.9,66.35,7.95,7.95],B0:[20.3,89.4,15.2,6],
+                C2:[42.6,42.3,8.35,5.65],C3:[57.55,42.3,8.35,5.65],C1:[42.6,63.25,8.35,5.65],C4:[57.55,63.25,8.35,5.65],
+                E1:[40.45,82.55,5.2,5.3],E2:[49.9,82.55,5.2,5.3],F1:[73.05,85.6,5.7,7.45],F2:[82.55,85.6,10.4,7.45]
             };
             const preset=item=>anchors[String(item.code).toUpperCase()]||null;
             function draw(){stage.innerHTML='';items.forEach((item,index)=>{const el=document.createElement('div');el.className='dizzy-layout-table '+item.shape+(index===selected?' is-selected':'')+(!item.active?' is-disabled':'');el.textContent=item.code;Object.assign(el.style,{left:item.x+'%',top:item.y+'%',width:item.width+'%',height:item.height+'%',transform:'rotate('+item.rotation+'deg)'});el.addEventListener('pointerdown',event=>{selected=index;edit();stage.querySelectorAll('.dizzy-layout-table').forEach(node=>node.classList.remove('is-selected'));el.classList.add('is-selected');const box=stage.getBoundingClientRect(),sx=event.clientX,sy=event.clientY,ox=item.x,oy=item.y;el.setPointerCapture(event.pointerId);el.onpointermove=e=>{let x=clamp(ox+(e.clientX-sx)/box.width*100,0,100-item.width),y=clamp(oy+(e.clientY-sy)/box.height*100,0,100-item.height),target=preset(item);el.classList.remove('is-snapped');if(target&&Math.hypot(x-target[0],y-target[1])<4){x=target[0];y=target[1];el.classList.add('is-snapped')}item.x=x;item.y=y;el.style.left=x+'%';el.style.top=y+'%';};el.onpointerup=()=>{el.onpointermove=null;};});stage.appendChild(el);});}
