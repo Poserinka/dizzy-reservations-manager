@@ -12,6 +12,8 @@ Open **Reservations → Tables** to:
 
 - select a floor-plan image from the WordPress Media Library;
 - add, remove and drag tables;
+- auto-align the recognised A0–F2 tables to the supplied Dizzy floor plan;
+- snap a table magnetically to its detected position while dragging;
 - set each table's code, label, capacity, shape, size and rotation;
 - temporarily disable a table without deleting it.
 
