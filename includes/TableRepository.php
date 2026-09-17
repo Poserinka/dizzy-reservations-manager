@@ -76,17 +76,17 @@ final class TableRepository
         }
     }
 
-    public function availability(string $date, string $time, int $guests, string $session = ''): array
+    public function availability(string $date, string $time, int $guests, string $session = '', int $durationMinutes = 120): array
     {
         $start = $date . ' ' . $time . ':00';
-        $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+120 minutes')->format('Y-m-d H:i:s');
+        $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+' . max(1, $durationMinutes) . ' minutes')->format('Y-m-d H:i:s');
         return array_map(function (array $table) use ($start, $end, $guests, $session): array {
             $state = (int) $table['capacity'] < $guests ? 'too_small' : ($this->isAvailable((int) $table['id'], $start, $end, $session) ? 'available' : 'booked');
             return $table + ['state' => $state];
         }, $this->all(true));
     }
 
-    public function hold(int $tableId, string $date, string $time, int $guests, string $session): bool
+    public function hold(int $tableId, string $date, string $time, int $guests, string $session, int $durationMinutes = 120): bool
     {
         global $wpdb;
         if (! $this->lock($tableId)) return false;
@@ -94,7 +94,7 @@ final class TableRepository
             $this->cleanupHolds();
             $table = $this->find($tableId);
             $start = $date . ' ' . $time . ':00';
-            $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+120 minutes')->format('Y-m-d H:i:s');
+            $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+' . max(1, $durationMinutes) . ' minutes')->format('Y-m-d H:i:s');
             if ($table === null || (int) $table['capacity'] < $guests || ! $this->isAvailable($tableId, $start, $end, $session)) return false;
             $wpdb->delete($this->holds, ['session_token' => $session]);
             return $wpdb->insert($this->holds, [
@@ -110,12 +110,12 @@ final class TableRepository
         $wpdb->delete($this->holds, ['session_token' => $session]);
     }
 
-    public function validateAndLock(int $tableId, string $date, string $time, int $guests, string $session): bool
+    public function validateAndLock(int $tableId, string $date, string $time, int $guests, string $session, int $durationMinutes = 120): bool
     {
         if (! $this->lock($tableId)) return false;
         $table = $this->find($tableId);
         $start = $date . ' ' . $time . ':00';
-        $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+120 minutes')->format('Y-m-d H:i:s');
+        $end = (new \DateTimeImmutable($start, wp_timezone()))->modify('+' . max(1, $durationMinutes) . ' minutes')->format('Y-m-d H:i:s');
         $valid = $table !== null && (int) $table['capacity'] >= $guests && $this->isAvailable($tableId, $start, $end, $session);
         if (! $valid) $this->unlock($tableId);
         return $valid;

@@ -83,6 +83,12 @@ final class MobileApiController
             'date' => (string) ($row['reservation_date'] ?? ''),
             'time' => substr((string) ($row['reservation_time'] ?? ''), 0, 5),
             'guests' => (int) $row['guests'],
+            'table' => (string) ($row['table_code'] ?? ''),
+            'reservation_type' => (string) ($row['reservation_type'] ?? 'standard'),
+            'ticket_status' => (string) ($row['ticket_status'] ?? 'none'),
+            'ticket_quantity' => (int) ($row['ticket_quantity'] ?? 0),
+            'event_title' => (string) ($row['event_title'] ?? ''),
+            'concert_time' => ! empty($row['concert_start']) ? substr((string) $row['concert_start'], 11, 5) : '',
             'message' => (string) ($row['notes'] ?? ''),
             'status' => (string) $row['status'],
         ], $rows));

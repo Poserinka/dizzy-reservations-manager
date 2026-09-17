@@ -20,3 +20,12 @@ Open **Reservations → Tables** to:
 Available tables are green, occupied tables are red, and the visitor's current selection is amber. A selection is held for ten minutes and availability is checked again when the reservation is saved.
 
 The **Reservations** list displays the assigned table beside the party size.
+
+## Concert-night reservations
+
+When Dizzy Events Manager has a published paid event on the selected date, the reservation form automatically offers:
+
+- **Dinner + Concert** (default): the guest keeps the table through the concert and either confirms existing tickets or follows the event ticket link to buy them;
+- **Dinner only**: the table is reserved until one hour before the concert and concert admission is explicitly excluded.
+
+The selected experience, linked event, ticket intent and calculated table duration are saved with the reservation and repeated in confirmation/status emails. Days without a paid event keep the standard two-hour reservation flow.

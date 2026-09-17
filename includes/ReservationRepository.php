@@ -23,8 +23,8 @@ final class ReservationRepository
         global $wpdb;
         $now = current_time('mysql', true);
         $ok = $wpdb->insert($this->table, [
-            'event_id' => 0,
-            'occurrence_id' => 0,
+            'event_id' => (int) ($data['event_id'] ?? 0),
+            'occurrence_id' => (int) ($data['occurrence_id'] ?? 0),
             'name' => (string) $data['name'],
             'email' => (string) $data['email'],
             'phone' => (string) $data['phone'],
@@ -33,6 +33,14 @@ final class ReservationRepository
             'guests' => (int) $data['guests'],
             'table_id' => (int) ($data['table_id'] ?? 0),
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 120),
+            'reservation_type' => (string) ($data['reservation_type'] ?? 'standard'),
+            'ticket_status' => (string) ($data['ticket_status'] ?? 'none'),
+            'ticket_quantity' => (int) ($data['ticket_quantity'] ?? 0),
+            'ticket_price' => (float) ($data['ticket_price'] ?? 0),
+            'event_title' => (string) ($data['event_title'] ?? ''),
+            'concert_start' => $data['concert_start'] ?? null,
+            'concert_end' => $data['concert_end'] ?? null,
+            'ticket_url' => (string) ($data['ticket_url'] ?? ''),
             'status' => (string) $data['status'],
             'notes' => (string) $data['message'],
             'created_at' => $now,

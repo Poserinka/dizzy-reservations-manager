@@ -8,7 +8,7 @@ defined('ABSPATH') || exit;
 
 final class Migrations
 {
-    private const VERSION = '3.9.0';
+    private const VERSION = '3.10.0';
 
     public static function run(): void
     {
@@ -36,6 +36,14 @@ final class Migrations
             guests int(11) unsigned NOT NULL DEFAULT 1,
             table_id bigint(20) unsigned NOT NULL DEFAULT 0,
             duration_minutes int(11) unsigned NOT NULL DEFAULT 120,
+            reservation_type varchar(32) NOT NULL DEFAULT 'standard',
+            ticket_status varchar(32) NOT NULL DEFAULT 'none',
+            ticket_quantity int(11) unsigned NOT NULL DEFAULT 0,
+            ticket_price decimal(10,2) NOT NULL DEFAULT 0,
+            event_title varchar(255) NULL,
+            concert_start datetime NULL,
+            concert_end datetime NULL,
+            ticket_url text NULL,
             status varchar(32) NOT NULL DEFAULT 'pending',
             notes text NULL,
             created_at datetime NOT NULL,
