@@ -10,7 +10,7 @@ final class AdminController
 {
     private const MENU = 'dizzy-reservations';
     private const REPORTS = 'dizzy-reservations-reports';
-    private const STATUSES = ['pending', 'confirmed', 'waitlisted', 'cancelled'];
+    private const STATUSES = ['pending', 'pending_payment', 'payment_failed', 'confirmed', 'waitlisted', 'cancelled'];
 
     public function __construct(private ReservationRepository $repository, private ReservationService $service)
     {
@@ -91,7 +91,7 @@ final class AdminController
                                     <td><strong><?php echo esc_html((string) ($row['table_code'] ?: '—')); ?></strong><?php if (! empty($row['table_label']) && $row['table_label'] !== $row['table_code']) : ?><br><small><?php echo esc_html((string) $row['table_label']); ?></small><?php endif; ?></td>
                                     <td><?php $type=(string)($row['reservation_type']??'standard'); echo esc_html($type==='dinner_concert'?'Dinner + Concert':($type==='dinner_only'?'Dinner only':'Standard')); ?><?php if($type==='dinner_concert'): ?><br><small><?php echo esc_html((string)($row['event_title']??'')); ?> · <?php echo esc_html((string)($row['ticket_status']??'')); ?><?php if(($row['ticket_status']??'')==='buy'): ?> · <?php echo esc_html((string)($row['ticket_quantity']??0)); ?> tickets<?php endif; ?></small><?php elseif($type==='dinner_only'&&!empty($row['concert_start'])): ?><br><small><?php echo esc_html(sprintf('Table until %s',(new \DateTimeImmutable((string)$row['concert_start'],wp_timezone()))->modify('-1 hour')->format('H:i'))); ?></small><?php endif; ?></td>
                                     <td><?php echo nl2br(esc_html((string) $row['notes'])); ?></td>
-                                    <td><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="dizzy_reservation_status"><input type="hidden" name="reservation_id" value="<?php echo esc_attr((string) $id); ?>"><?php wp_nonce_field('dizzy_reservation_' . $id); ?><select name="status"><?php foreach (self::STATUSES as $status) : ?><option value="<?php echo esc_attr($status); ?>" <?php selected($row['status'], $status); ?>><?php echo esc_html(ucfirst($status)); ?></option><?php endforeach; ?></select> <button class="button"><?php esc_html_e('Save', 'dizzy-reservations-manager'); ?></button></form></td>
+                                    <td><form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="dizzy_reservation_status"><input type="hidden" name="reservation_id" value="<?php echo esc_attr((string) $id); ?>"><?php wp_nonce_field('dizzy_reservation_' . $id); ?><select name="status"><?php foreach (self::STATUSES as $status) : ?><option value="<?php echo esc_attr($status); ?>" <?php selected($row['status'], $status); ?>><?php echo esc_html(ucwords(str_replace('_', ' ', $status))); ?></option><?php endforeach; ?></select> <button class="button"><?php esc_html_e('Save', 'dizzy-reservations-manager'); ?></button></form></td>
                                 </tr>
                             <?php endforeach; ?>
                             <tr id="dizzy-no-reservations" hidden><td colspan="8"><?php esc_html_e('No reservations for this date.', 'dizzy-reservations-manager'); ?></td></tr>

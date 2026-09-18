@@ -22,6 +22,7 @@ final class Plugin
         $tables = new TableRepository();
         $events = new EventGateway();
         $service = new ReservationService($repository, new Mailer(), $tables, $events, new TicketGateway());
+        add_action('dizzy_ticket_order_status_changed', [$service, 'ticketOrderStatusChanged'], 10, 2);
 
         (new FrontendController($service, $tables))->register();
         (new MobileApiController($repository, $service))->register();

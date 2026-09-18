@@ -41,6 +41,8 @@ final class ReservationRepository
             'concert_start' => $data['concert_start'] ?? null,
             'concert_end' => $data['concert_end'] ?? null,
             'ticket_url' => (string) ($data['ticket_url'] ?? ''),
+            'ticket_order_id' => (int) ($data['ticket_order_id'] ?? 0),
+            'payment_expires_at' => $data['payment_expires_at'] ?? null,
             'status' => (string) $data['status'],
             'notes' => (string) $data['message'],
             'created_at' => $now,
@@ -72,6 +74,33 @@ final class ReservationRepository
     {
         global $wpdb;
         return $wpdb->update($this->table, ['status' => $status, 'updated_at' => current_time('mysql', true)], ['id' => $id]) !== false;
+    }
+
+    public function attachTicketOrder(int $id, int $orderId): bool
+    {
+        global $wpdb;
+        return $wpdb->update($this->table, [
+            'ticket_order_id' => $orderId,
+            'payment_expires_at' => gmdate('Y-m-d H:i:s', time() + 65 * MINUTE_IN_SECONDS),
+            'updated_at' => current_time('mysql', true),
+        ], ['id' => $id]) !== false;
+    }
+
+    public function findByTicketOrder(int $orderId): ?array
+    {
+        global $wpdb;
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE ticket_order_id=%d LIMIT 1", $orderId), ARRAY_A);
+        return is_array($row) ? $row : null;
+    }
+
+    public function markTicketPaid(int $id): bool
+    {
+        global $wpdb;
+        return $wpdb->update($this->table, [
+            'status' => 'confirmed',
+            'ticket_status' => 'paid',
+            'updated_at' => current_time('mysql', true),
+        ], ['id' => $id]) !== false;
     }
 
     public function reportSummary(): array

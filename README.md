@@ -32,4 +32,6 @@ The selected experience, linked event, ticket intent and calculated table durati
 
 “I already have concert tickets” is never preselected. When chosen, the submitted reservation email must match enough valid tickets in Dizzy Ticket Manager for the same event occurrence and party size. Pending or unpaid ticket orders do not pass verification.
 
-The buy-ticket option remains visible for every paid concert. If the event has a ticket URL, the confirmation email links to it; otherwise the purchase request is stored with the reservation so Dizzy can send the payment link separately.
+The buy-ticket option remains visible for every paid concert. With Dizzy Ticket Manager active, the reservation starts a Mollie checkout directly; without the checkout bridge, the pending reservation remains saved and the visitor receives a clear configuration error instead of a false confirmation.
+
+When Dizzy Ticket Manager 1.10.0 or newer is active, choosing the buy-ticket option creates the reservation as `pending_payment`, reserves the table, and sends the visitor to Mollie. A verified paid webhook changes the reservation to `confirmed` and sends the reservation confirmation. Failed or cancelled payments return to the reservation page with the form restored so the same reservation can retry payment without creating a duplicate.

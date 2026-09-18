@@ -8,7 +8,7 @@ defined('ABSPATH') || exit;
 
 final class Migrations
 {
-    private const VERSION = '3.10.0';
+    private const VERSION = '3.11.0';
 
     public static function run(): void
     {
@@ -44,6 +44,8 @@ final class Migrations
             concert_start datetime NULL,
             concert_end datetime NULL,
             ticket_url text NULL,
+            ticket_order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            payment_expires_at datetime NULL,
             status varchar(32) NOT NULL DEFAULT 'pending',
             notes text NULL,
             created_at datetime NOT NULL,
@@ -52,7 +54,8 @@ final class Migrations
             KEY reservation_slot (reservation_date,reservation_time),
             KEY table_slot (table_id,reservation_date,reservation_time),
             KEY status (status),
-            KEY email (email)
+            KEY email (email),
+            KEY ticket_order_id (ticket_order_id)
         ) {$charset};");
 
         dbDelta("CREATE TABLE {$tables} (

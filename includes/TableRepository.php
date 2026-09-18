@@ -132,8 +132,12 @@ final class TableRepository
         global $wpdb;
         $this->cleanupHolds();
         $booked = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->reservations} WHERE table_id=%d AND status!='cancelled' AND TIMESTAMP(reservation_date,reservation_time)<%s AND DATE_ADD(TIMESTAMP(reservation_date,reservation_time), INTERVAL duration_minutes MINUTE)>%s",
-            $tableId, $end, $start
+            "SELECT COUNT(*) FROM {$this->reservations} WHERE table_id=%d
+            AND status NOT IN ('cancelled','payment_failed')
+            AND (status!='pending_payment' OR payment_expires_at>%s)
+            AND TIMESTAMP(reservation_date,reservation_time)<%s
+            AND DATE_ADD(TIMESTAMP(reservation_date,reservation_time), INTERVAL duration_minutes MINUTE)>%s",
+            $tableId, current_time('mysql', true), $end, $start
         ));
         if ($booked > 0) return false;
         $held = (int) $wpdb->get_var($wpdb->prepare(

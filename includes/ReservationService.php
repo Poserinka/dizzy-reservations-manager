@@ -54,6 +54,7 @@ final class ReservationService
         }
 
         $plan = $this->plan($date, $time, $guests, $requestedType, $requestedTicket, $email);
+        $requiresPayment = $plan['reservation_type'] === 'dinner_concert' && $plan['ticket_status'] === 'buy';
 
         $tablesEnabled = $this->tables->hasActiveTables();
         if ($tablesEnabled && ($tableId < 1 || $tableSession === '')) {
@@ -86,7 +87,8 @@ final class ReservationService
                 'concert_end' => $plan['concert_end'],
                 'ticket_url' => $plan['ticket_url'],
                 'message' => $message,
-                'status' => 'confirmed',
+                'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
+                'payment_expires_at' => $requiresPayment ? gmdate('Y-m-d H:i:s', time() + 65 * MINUTE_IN_SECONDS) : null,
                 'experience' => $plan,
             ]);
             $this->tables->release($tableSession);
@@ -94,40 +96,69 @@ final class ReservationService
             if ($tablesEnabled && $tableId > 0) $this->tables->unlock($tableId);
         }
 
-        $this->mailer->sendTemplate(
-            $email,
-            __('Reservation confirmed', 'dizzy-reservations-manager'),
-            'reservation-confirmed',
-            [
-                'reservation_id' => $id,
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'date' => $parsedDate->format('d/m/Y'),
-                'time' => $time,
-                'guests' => $guests,
-                'table' => (string) ($table['code'] ?? ''),
-                'message' => $message,
-                'status' => 'confirmed',
-                'experience' => $plan,
-            ]
-        );
-
-        do_action('dizzy_reservation_created', [
-            'reservation_id' => $id,
-            'name' => $name,
-            'email' => $email,
-            'phone' => $phone,
-            'date' => $parsedDate->format('d/m/Y'),
-            'time' => $time,
-            'guests' => $guests,
-            'table' => (string) ($table['code'] ?? ''),
-            'message' => $message,
-            'status' => 'confirmed',
-            'experience' => $plan,
-        ]);
+        if (! $requiresPayment) {
+            $this->sendConfirmation($this->repository->find($id) ?? [], (string) ($table['code'] ?? ''));
+        }
 
         return $id;
+    }
+
+    public function startPayment(int $reservationId, string $returnUrl, string $email): array
+    {
+        $row = $this->repository->find($reservationId);
+        if (
+            $row === null
+            || ! in_array((string) $row['status'], ['pending_payment', 'payment_failed'], true)
+            || (string) $row['ticket_status'] !== 'buy'
+            || ! hash_equals(strtolower((string) $row['email']), strtolower(sanitize_email($email)))
+        ) {
+            throw new RuntimeException('This reservation cannot be sent to payment.');
+        }
+        if (! empty($row['payment_expires_at']) && strtotime((string) $row['payment_expires_at'] . ' UTC') < time()) {
+            $this->repository->updateStatus($reservationId, 'payment_failed');
+            throw new RuntimeException('The table hold for this payment has expired. Please start a new reservation and choose an available table.');
+        }
+
+        $result = apply_filters('dizzy_ticket_checkout_start', null, [
+            'event_id' => (int) $row['event_id'],
+            'occurrence_id' => (int) $row['occurrence_id'],
+            'quantity' => (int) $row['ticket_quantity'],
+            'name' => (string) $row['name'],
+            'email' => (string) $row['email'],
+            'phone' => (string) ($row['phone'] ?? ''),
+            'return_url' => $returnUrl,
+        ]);
+        if (! is_array($result) || empty($result['checkout_url']) || empty($result['order_id'])) {
+            throw new RuntimeException('Ticket checkout is unavailable. Make sure Dizzy Ticket Manager and Mollie are configured.');
+        }
+        $this->repository->attachTicketOrder($reservationId, (int) $result['order_id']);
+        if ((string) $row['status'] === 'payment_failed') {
+            $this->repository->updateStatus($reservationId, 'pending_payment');
+        }
+        return $result;
+    }
+
+    public function reservation(int $id): ?array
+    {
+        return $this->repository->find($id);
+    }
+
+    public function ticketOrderStatusChanged(array $order, mixed $before = null): void
+    {
+        $row = $this->repository->findByTicketOrder((int) ($order['id'] ?? 0));
+        if ($row === null) {
+            return;
+        }
+        $status = (string) ($order['status'] ?? 'pending');
+        if ($status === 'paid' && (string) $row['status'] !== 'confirmed') {
+            $this->repository->markTicketPaid((int) $row['id']);
+            $row['status'] = 'confirmed';
+            $row['ticket_status'] = 'paid';
+            $table = (int) ($row['table_id'] ?? 0) > 0 ? $this->tables->find((int) $row['table_id']) : null;
+            $this->sendConfirmation($row, (string) ($table['code'] ?? ''));
+        } elseif (in_array($status, ['failed', 'canceled', 'expired'], true)) {
+            $this->repository->updateStatus((int) $row['id'], 'payment_failed');
+        }
     }
 
     /**
@@ -249,5 +280,30 @@ final class ReservationService
                 ? (new DateTimeImmutable((string) $row['concert_start'], wp_timezone()))->modify('-1 hour')->format('H:i') : '',
             'ticket_url' => (string) ($row['ticket_url'] ?? ''),
         ];
+    }
+
+    private function sendConfirmation(array $row, string $tableCode): void
+    {
+        if ($row === [] || ! is_email((string) ($row['email'] ?? ''))) {
+            return;
+        }
+        $date = (string) ($row['reservation_date'] ?? '');
+        $parsedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date, wp_timezone());
+        $experience = $this->experienceFromRow($row);
+        $data = [
+            'reservation_id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'email' => (string) $row['email'],
+            'phone' => (string) ($row['phone'] ?? ''),
+            'date' => $parsedDate instanceof DateTimeImmutable ? $parsedDate->format('d/m/Y') : $date,
+            'time' => substr((string) ($row['reservation_time'] ?? ''), 0, 5),
+            'guests' => (int) $row['guests'],
+            'table' => $tableCode,
+            'message' => (string) ($row['notes'] ?? ''),
+            'status' => 'confirmed',
+            'experience' => $experience,
+        ];
+        $this->mailer->sendTemplate((string) $row['email'], __('Reservation confirmed', 'dizzy-reservations-manager'), 'reservation-confirmed', $data);
+        do_action('dizzy_reservation_created', $data);
     }
 }
