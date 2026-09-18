@@ -10,6 +10,8 @@ defined('ABSPATH') || exit;
 
 final class ReservationRepository
 {
+    private const PAYMENT_HOLD_MINUTES = 15;
+
     private string $table;
 
     public function __construct()
@@ -81,7 +83,7 @@ final class ReservationRepository
         global $wpdb;
         return $wpdb->update($this->table, [
             'ticket_order_id' => $orderId,
-            'payment_expires_at' => gmdate('Y-m-d H:i:s', time() + 65 * MINUTE_IN_SECONDS),
+            'payment_expires_at' => gmdate('Y-m-d H:i:s', time() + self::PAYMENT_HOLD_MINUTES * MINUTE_IN_SECONDS),
             'updated_at' => current_time('mysql', true),
         ], ['id' => $id]) !== false;
     }

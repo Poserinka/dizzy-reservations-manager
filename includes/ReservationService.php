@@ -11,6 +11,8 @@ defined('ABSPATH') || exit;
 
 final class ReservationService
 {
+    private const PAYMENT_HOLD_MINUTES = 15;
+
     public const TIMES = ['16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 
     public function __construct(
@@ -88,7 +90,7 @@ final class ReservationService
                 'ticket_url' => $plan['ticket_url'],
                 'message' => $message,
                 'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
-                'payment_expires_at' => $requiresPayment ? gmdate('Y-m-d H:i:s', time() + 65 * MINUTE_IN_SECONDS) : null,
+                'payment_expires_at' => $requiresPayment ? gmdate('Y-m-d H:i:s', time() + self::PAYMENT_HOLD_MINUTES * MINUTE_IN_SECONDS) : null,
                 'experience' => $plan,
             ]);
             $this->tables->release($tableSession);
