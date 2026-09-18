@@ -150,9 +150,6 @@ final class ReservationService
             throw new RuntimeException('Choose whether you already have concert tickets or would like to buy them.');
         }
         $ticketStatus = $type === 'dinner_concert' ? $requestedTicket : 'none';
-        if ($ticketStatus === 'buy' && (string) $concert['ticket_url'] === '') {
-            throw new RuntimeException('Online ticket sales are not available for this concert. Choose “I already have concert tickets” or contact Dizzy.');
-        }
         if ($ticketStatus === 'already_purchased' && $email !== '') {
             $ticketCount = $this->tickets->validTicketCount((int) $concert['event_id'], (int) $concert['id'], $email);
             if ($ticketCount < $guests) {

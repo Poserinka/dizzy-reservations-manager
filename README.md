@@ -31,3 +31,5 @@ When Dizzy Events Manager has a published paid event on the selected date, the r
 The selected experience, linked event, ticket intent and calculated table duration are saved with the reservation and repeated in confirmation/status emails. Days without a paid event keep the standard two-hour reservation flow.
 
 “I already have concert tickets” is never preselected. When chosen, the submitted reservation email must match enough valid tickets in Dizzy Ticket Manager for the same event occurrence and party size. Pending or unpaid ticket orders do not pass verification.
+
+The buy-ticket option remains visible for every paid concert. If the event has a ticket URL, the confirmation email links to it; otherwise the purchase request is stored with the reservation so Dizzy can send the payment link separately.
