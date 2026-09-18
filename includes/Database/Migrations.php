@@ -8,7 +8,7 @@ defined('ABSPATH') || exit;
 
 final class Migrations
 {
-    private const VERSION = '3.11.4';
+    private const VERSION = '3.11.5';
 
     public static function run(): void
     {
