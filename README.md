@@ -25,7 +25,9 @@ The **Reservations** list displays the assigned table beside the party size.
 
 When Dizzy Events Manager has a published paid event on the selected date, the reservation form automatically offers:
 
-- **Dinner + Concert** (default): the guest keeps the table through the concert and either confirms existing tickets or follows the event ticket link to buy them;
+- **Dinner + Concert** (default): the guest keeps the table through the concert and explicitly chooses whether tickets were already purchased or should be bought;
 - **Dinner only**: the table is reserved until one hour before the concert and concert admission is explicitly excluded.
 
 The selected experience, linked event, ticket intent and calculated table duration are saved with the reservation and repeated in confirmation/status emails. Days without a paid event keep the standard two-hour reservation flow.
+
+“I already have concert tickets” is never preselected. When chosen, the submitted reservation email must match enough valid tickets in Dizzy Ticket Manager for the same event occurrence and party size. Pending or unpaid ticket orders do not pass verification.

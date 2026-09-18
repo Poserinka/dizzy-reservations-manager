@@ -21,7 +21,7 @@ final class Plugin
         $repository = new ReservationRepository();
         $tables = new TableRepository();
         $events = new EventGateway();
-        $service = new ReservationService($repository, new Mailer(), $tables, $events);
+        $service = new ReservationService($repository, new Mailer(), $tables, $events, new TicketGateway());
 
         (new FrontendController($service, $tables))->register();
         (new MobileApiController($repository, $service))->register();

@@ -17,7 +17,8 @@ final class ReservationService
         private ReservationRepository $repository,
         private Mailer $mailer,
         private TableRepository $tables,
-        private EventGateway $events
+        private EventGateway $events,
+        private TicketGateway $tickets
     ) {
     }
 
@@ -52,7 +53,7 @@ final class ReservationService
             throw new RuntimeException('Invalid reservation details.');
         }
 
-        $plan = $this->plan($date, $time, $guests, $requestedType, $requestedTicket);
+        $plan = $this->plan($date, $time, $guests, $requestedType, $requestedTicket, $email);
 
         $tablesEnabled = $this->tables->hasActiveTables();
         if ($tablesEnabled && ($tableId < 1 || $tableSession === '')) {
@@ -108,6 +109,7 @@ final class ReservationService
                 'table' => (string) ($table['code'] ?? ''),
                 'message' => $message,
                 'status' => 'confirmed',
+                'experience' => $plan,
             ]
         );
 
@@ -131,7 +133,7 @@ final class ReservationService
     /**
      * Return authoritative concert and duration information for a selected slot.
      */
-    public function plan(string $date, string $time, int $guests, string $requestedType = '', string $requestedTicket = ''): array
+    public function plan(string $date, string $time, int $guests, string $requestedType = '', string $requestedTicket = '', string $email = ''): array
     {
         $concert = $this->events->ticketedConcertOn($date);
         if ($concert === null) {
@@ -144,11 +146,23 @@ final class ReservationService
         }
 
         $type = in_array($requestedType, ['dinner_only', 'dinner_concert'], true) ? $requestedType : 'dinner_concert';
-        $ticketStatus = $type === 'dinner_concert'
-            ? (in_array($requestedTicket, ['already_purchased', 'buy'], true) ? $requestedTicket : 'buy')
-            : 'none';
+        if ($type === 'dinner_concert' && ! in_array($requestedTicket, ['already_purchased', 'buy'], true)) {
+            throw new RuntimeException('Choose whether you already have concert tickets or would like to buy them.');
+        }
+        $ticketStatus = $type === 'dinner_concert' ? $requestedTicket : 'none';
         if ($ticketStatus === 'buy' && (string) $concert['ticket_url'] === '') {
             throw new RuntimeException('Online ticket sales are not available for this concert. Choose “I already have concert tickets” or contact Dizzy.');
+        }
+        if ($ticketStatus === 'already_purchased' && $email !== '') {
+            $ticketCount = $this->tickets->validTicketCount((int) $concert['event_id'], (int) $concert['id'], $email);
+            if ($ticketCount < $guests) {
+                throw new RuntimeException(sprintf(
+                    'We found %1$d valid concert ticket(s) for %2$s, but this reservation is for %3$d people. Use the same email address as your ticket order or buy the missing tickets.',
+                    $ticketCount,
+                    $email,
+                    $guests
+                ));
+            }
         }
         $start = new DateTimeImmutable($date . ' ' . $time . ':00', wp_timezone());
         $concertStart = new DateTimeImmutable((string) $concert['start_datetime'], wp_timezone());
