@@ -50,7 +50,6 @@ final class ReservationService
             || ! in_array($time, self::TIMES, true)
             || $guests < 1
             || $guests > 100
-            || $message === ''
         ) {
             throw new RuntimeException('Invalid reservation details.');
         }
